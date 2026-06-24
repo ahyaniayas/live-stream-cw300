@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu24.04
+FROM nvidia/cuda:12.6.0-cudnn-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,7 +12,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # PyTorch CUDA dulu agar ultralytics tidak install versi CPU-only
-RUN pip3 install --no-cache-dir --break-system-packages torch torchvision --index-url https://download.pytorch.org/whl/cu124
+RUN pip3 install --no-cache-dir --break-system-packages torch torchvision --index-url https://download.pytorch.org/whl/cu126
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 COPY . .
