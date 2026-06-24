@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kamera CW300 — Deteksi Objek</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Kamera Xiaomi CW300</h1>
+
+  <!-- Alert Banner -->
+  <div id="gateBanner" class="hidden">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span id="bannerText">ORANG TERDETEKSI DI ZONA!</span>
+  </div>
+
+  <!-- Video -->
+  <div class="video-wrap" id="videoWrap">
+    <img id="feed" src="/video_feed" alt="Live stream">
+    <canvas id="zoneCanvas"></canvas>
+    <div id="loader">
+      <div class="spinner"></div>
+      <p>Menghubungkan ke kamera...</p>
+    </div>
+    <button id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">
+      <svg id="fsIcon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Main Controls -->
+  <div class="controls">
+    <button id="settingsBtn" onclick="openSettings()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06
+                 a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09
+                 A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83
+                 l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09
+                 A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83
+                 l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09
+                 a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83
+                 l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09
+                 a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Pengaturan
+    </button>
+    <span class="badge" id="fpsBadge">–</span>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsBackdrop" onclick="closeSettings()">
+    <div id="settingsModal" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <span>Pengaturan</span>
+        <button onclick="closeSettings()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <span>Deteksi objek</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="detectToggle" checked onchange="toggleDetect()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <span>Tampilkan kotak zona &amp; objek</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showBoxesToggle" checked onchange="toggleBoxes()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <span>Tampilkan nama zona &amp; objek</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showNamesToggle" checked onchange="toggleNames()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="setting-divider"></div>
+        <div class="setting-section-title">Kategori Deteksi</div>
+        <div class="setting-checks">
+          <label class="check-row">
+            <input type="checkbox" id="catPerson" checked onchange="toggleCategory('person')">
+            Orang
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="catVehicle" checked onchange="toggleCategory('vehicle')">
+            Kendaraan
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="catOther" checked onchange="toggleCategory('other')">
+            Objek Lainnya
+          </label>
+        </div>
+        <div class="setting-divider"></div>
+        <div class="setting-section-title">Notifikasi Telegram</div>
+        <div class="setting-row">
+          <span>Interval notifikasi</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="notifInterval" class="setting-input" min="1" max="1440" value="5">
+            <span style="font-size:12px;color:var(--muted)">menit</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span>Selalu Aktif</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="notifAlwaysOn" onchange="onAlwaysOnChange()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="notif-time-row" id="notifTimeRow">
+          <label>Jam aktif</label>
+          <input type="time" id="notifStart" class="setting-input" value="00:00">
+          <span class="notif-sep">–</span>
+          <input type="time" id="notifEnd" class="setting-input" value="23:59">
+        </div>
+        <div style="padding:4px 20px 8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-orange btn-sm" onclick="saveNotifSettings()">Simpan</button>
+          <button class="btn btn-panel btn-sm" onclick="testNotif()">Tes Kirim</button>
+        </div>
+        <div id="notifStatus" class="notif-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Zona Panel -->
+  <div id="editPanel">
+    <h2 id="editTitle">Tambah Zona Baru</h2>
+    <input id="zoneName" type="text" placeholder="Nama zona (contoh: Gerbang Depan)" maxlength="40">
+    <div class="edit-row">
+      <span id="editHint">Klik pada video untuk menambah titik zona.</span>
+      <button class="btn btn-panel btn-sm" onclick="undoPoint()">↩ Undo</button>
+      <button class="btn btn-orange btn-sm" onclick="saveZone()">Simpan</button>
+      <button class="btn btn-panel btn-sm" onclick="cancelEdit()">Batal</button>
+    </div>
+  </div>
+
+  <!-- Zona Cards -->
+  <div id="zonesSection">
+    <div class="zones-hdr">
+      <h2>Zona Deteksi</h2>
+      <button class="btn btn-orange btn-sm" onclick="addZone()">+ Tambah Zona</button>
+    </div>
+    <div id="zoneCards"><p class="empty">Memuat...</p></div>
+  </div>
+
+  <!-- Objek Terdeteksi -->
+  <div id="detBox">
+    <h2>Objek Terdeteksi</h2>
+    <div id="detList"><span class="empty">Memuat...</span></div>
+  </div>
+
+  <!-- Notifikasi Summary -->
+  <div id="notifBox">
+    <div class="notif-box-hdr">
+      <h2>Riwayat Notifikasi Telegram</h2>
+      <div class="notif-status-wrap">
+        <div class="notif-info-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8.01"/>
+            <line x1="12" y1="12" x2="12" y2="16"/>
+          </svg>
+          <div class="notif-tooltip" id="notifTooltip">
+            <div id="notifTooltipInterval">Interval: –</div>
+            <div id="notifTooltipTime">Jam: –</div>
+          </div>
+        </div>
+        <span class="notif-badge" id="notifCooldownBadge">–</span>
+      </div>
+    </div>
+    <div class="notif-hist-list" id="notifHistList">
+      <span class="empty">Belum ada notifikasi terkirim.</span>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

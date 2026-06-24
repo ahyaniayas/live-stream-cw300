@@ -1,0 +1,27 @@
+xiaomi:
+  # Key = DID kamera, Value = encrypted token dari Xiaomi cloud
+  # Kualitas stream (parameter &subtype=N di URL):
+  #   0 = auto | 1 = SD | 2 = HD (default go2rtc) | 3-5 = HD+ (kamera baru, skip jika kamera lama)
+  "1630673468": V1:9d2wTZnSKA8D7PcQtwbCZLudv47ppc8oZfZBhpBwIsknaIewGvBPtwRJnqEL8v97Jv24LoC11P8HjFblPkT1m2obxdDJczxXv9HXG3XaeswsxukNCVIQJB0n4SHfSduYZpeubauwKjbkxgbe/UzZ4gIG2vcpPb3H0KoovPV6hGxUdxCQ1T/WhTCZARvytQqA9W9jzevcl9ELKFLgLW/D5iDTTNdfuDmB5IjlL6r6rm4/cc+r1DseVMyBJgot7Y9woBaq/IP1QVIwn642emcOrxmjUvDyYdJJlFzc+rE1JlM=
+
+streams:
+  # default sub 2
+  cctv_default: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006
+
+  #hati-hati 0=auto
+  cctv_sub0: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=0
+  cctv_sub1: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=1
+  cctv_sub2: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=2
+  cctv_sub3: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=3
+  cctv_sub4: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=4
+  cctv_sub5: 
+    xiaomi://1630673468:sg@192.168.18.12?did=1176536159&model=mxiang.camera.moc006&subtype=5
+
+log:
+  level: debug # debug, info, warning, error, critical

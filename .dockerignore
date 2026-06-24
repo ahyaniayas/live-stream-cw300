@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.vscode/
+.git/
+.env
+cctv_detect.db
+models/
+go2rtc/

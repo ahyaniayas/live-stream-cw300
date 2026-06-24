@@ -1,0 +1,55 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# YOLO / ML models
+models/*.pt
+models/*.onnx
+models/*.engine
+models/*.tflite
+
+# go2rtc binary
+go2rtc/go2rtc
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VSCode (keep workspace settings, ignore personal)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+logs/
+
+# Docker override (local only)
+docker-compose.override.yml
