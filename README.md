@@ -131,7 +131,7 @@ After=network.target
 [Service]
 User=YOUR_USERNAME
 WorkingDirectory=/home/YOUR_USERNAME/live-stream-cw300
-ExecStart=/home/YOUR_USERNAME/.pyenv/shims/python app.py
+ExecStart=/home/YOUR_USERNAME/live-stream-cw300/.venv/bin/python app.py
 Restart=on-failure
 StandardOutput=journal
 StandardError=journal
