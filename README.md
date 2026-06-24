@@ -103,15 +103,58 @@ Verifikasi stream di `http://localhost:1984`.
 
 ## Menjalankan
 
-```bash
-# Terminal 1 — go2rtc
-cd go2rtc && docker compose up -d
+### go2rtc
 
-# Terminal 2 — web app
+```bash
+cd go2rtc && docker compose up -d && cd ..
+```
+
+### Web App (foreground)
+
+```bash
 python app.py
 ```
 
-Buka browser: **http://localhost:3001**
+### Web App (background dengan systemd)
+
+Buat service file:
+```bash
+sudo nano /etc/systemd/system/cctv.service
+```
+
+Isi:
+```ini
+[Unit]
+Description=CCTV Live Stream Detection
+After=network.target
+
+[Service]
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/live-stream-cw300
+ExecStart=/home/YOUR_USERNAME/.pyenv/shims/python app.py
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Aktifkan dan jalankan:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable cctv
+sudo systemctl start cctv
+```
+
+Cek status dan log:
+```bash
+sudo systemctl status cctv
+sudo journalctl -u cctv -f        # log realtime
+sudo journalctl -u cctv -n 100    # 100 baris terakhir
+```
+
+Buka browser: **http://\<IP-SERVER\>:3001**
 
 ---
 
