@@ -41,9 +41,11 @@ document.addEventListener('fullscreenchange', () => {
 const canvas   = document.getElementById('zoneCanvas');
 const ctx      = canvas.getContext('2d');
 let editMode   = false;
-let editZoneId = null;
-let editPoints = [];
-let zonesData  = [];
+let editZoneId      = null;
+let editPoints      = [];
+let zonesData       = [];
+let zonesLoaded     = false;
+const pendingNotify = new Set();
 
 function syncCanvas() {
   const r = canvas.getBoundingClientRect();
@@ -143,7 +145,7 @@ async function saveZone() {
     });
   }
   cancelEdit();
-  fetchZones();
+  forceRefreshZones();
 }
 
 // ── Zone Cards ────────────────────────────────────────────────────────────────
@@ -157,19 +159,19 @@ function renderZoneCards(zones) {
     const c   = zoneColor(z.id);
     const hot = z.current_count > 0;
     return `
-      <div class="zone-card ${z.active?'alert':''}"
+      <div class="zone-card ${z.active?'alert':''}" id="zone-card-${z.id}"
            style="border-color:${c};${z.active?'box-shadow:0 0 0 3px '+c+'30':''}">
         <div class="zone-card-header">
-          <div class="zone-dot ${z.active?'active':''}"></div>
+          <div class="zone-dot ${z.active?'active':''}" id="zone-dot-${z.id}"></div>
           <span class="zone-card-name" title="${z.name}">${z.name}</span>
         </div>
         <div class="zone-card-stats">
           <div class="zone-stat">
-            <div class="zone-stat-val ${hot?'hot':''}">${z.current_count}</div>
+            <div class="zone-stat-val ${hot?'hot':''}" id="zs-curr-${z.id}">${z.current_count}</div>
             <div class="zone-stat-lbl">Saat ini</div>
           </div>
           <div class="zone-stat">
-            <div class="zone-stat-val">${z.total_count}</div>
+            <div class="zone-stat-val" id="zs-tot-${z.id}">${z.total_count}</div>
             <div class="zone-stat-lbl">Total</div>
           </div>
           <div class="zone-stat">
@@ -177,11 +179,13 @@ function renderZoneCards(zones) {
             <div class="zone-stat-lbl">Titik</div>
           </div>
         </div>
-        <button class="zone-notify-btn ${z.notify?'on':''}"
-                onclick="toggleZoneNotify(${z.id})"
-                title="${z.notify?'Nonaktifkan notifikasi':'Aktifkan notifikasi Telegram'}">
-          ${z.notify?'🔔':'🔕'}
-        </button>
+        <div class="zone-notify-toggle" title="Notifikasi Telegram">
+          <span class="zone-notify-icon" id="zone-notify-icon-${z.id}">${z.notify?'🔔':'🔕'}</span>
+          <label class="toggle-switch toggle-switch-sm">
+            <input type="checkbox" id="zone-notify-chk-${z.id}" ${z.notify?'checked':''} onchange="toggleZoneNotify(${z.id})">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
         <div class="zone-card-actions">
           <button class="btn btn-panel btn-sm" onclick="resetZone(${z.id})">Reset</button>
           <button class="btn btn-panel btn-sm" onclick="editZone(${z.id})">Edit</button>
@@ -205,8 +209,42 @@ function updateAlertBanner(zones) {
 
 async function fetchZones() {
   try {
-    const r = await fetch('/zones', { signal: AbortSignal.timeout(2000) });
+    const r     = await fetch('/zones', { signal: AbortSignal.timeout(2000) });
+    const fresh = await r.json();
+    const sameList = fresh.length === zonesData.length &&
+      fresh.every((z, i) => z.id === zonesData[i]?.id);
+    zonesLoaded = true;
+    if (!sameList) {
+      zonesData = fresh;
+      renderZoneCards(zonesData);
+      updateAlertBanner(zonesData);
+      return;
+    }
+    const prev = zonesData;
+    zonesData = fresh.map(z => {
+      const curr = document.getElementById(`zs-curr-${z.id}`);
+      const tot  = document.getElementById(`zs-tot-${z.id}`);
+      const card = document.getElementById(`zone-card-${z.id}`);
+      const dot  = document.getElementById(`zone-dot-${z.id}`);
+      if (curr) { curr.textContent = z.current_count; curr.className = 'zone-stat-val' + (z.current_count > 0 ? ' hot' : ''); }
+      if (tot)  tot.textContent = z.total_count;
+      if (card) card.className  = 'zone-card' + (z.active ? ' alert' : '');
+      if (dot)  dot.className   = 'zone-dot'  + (z.active ? ' active' : '');
+      if (pendingNotify.has(z.id)) {
+        const local = prev.find(l => l.id === z.id);
+        return local ? { ...z, notify: local.notify } : z;
+      }
+      return z;
+    });
+    updateAlertBanner(zonesData);
+  } catch(_) {}
+}
+
+async function forceRefreshZones() {
+  try {
+    const r   = await fetch('/zones', { signal: AbortSignal.timeout(2000) });
     zonesData = await r.json();
+    zonesLoaded = true;
     renderZoneCards(zonesData);
     updateAlertBanner(zonesData);
   } catch(_) {}
@@ -221,7 +259,20 @@ async function deleteZone(id) {
   if (!confirm(`Hapus zona "${z?.name}"?`)) return;
   await fetch(`/zones/${id}`, { method:'DELETE' });
   if (editZoneId === id) cancelEdit();
-  fetchZones();
+  forceRefreshZones();
+}
+
+// ── Time input helpers (force HH:MM 24h on all browsers) ─────────────────────
+function onTimeInput(el) {
+  const digits = el.value.replace(/\D/g, '').slice(0, 4);
+  el.value = digits.length >= 3 ? digits.slice(0, 2) + ':' + digits.slice(2) : digits;
+}
+function onTimeBlur(el) {
+  const m = el.value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) { el.value = el.defaultValue; return; }
+  const h   = Math.min(parseInt(m[1], 10), 23).toString().padStart(2, '0');
+  const min = Math.min(parseInt(m[2], 10), 59).toString().padStart(2, '0');
+  el.value  = h + ':' + min;
 }
 
 // ── Settings modal ────────────────────────────────────────────────────────────
@@ -287,14 +338,30 @@ function _setNotifStatus(msg, ok) {
   setTimeout(() => { el.textContent = ''; el.className = 'notif-status'; }, 4000);
 }
 
+function _applyZoneNotifyUI(id, on) {
+  const icon = document.getElementById(`zone-notify-icon-${id}`);
+  const chk  = document.getElementById(`zone-notify-chk-${id}`);
+  if (icon) icon.textContent = on ? '🔔' : '🔕';
+  if (chk)  chk.checked = on;
+}
+
 async function toggleZoneNotify(id) {
+  if (pendingNotify.has(id)) return;
+  const z = zonesData.find(z => z.id === id);
+  if (!z) return;
+  pendingNotify.add(id);
+  z.notify = !z.notify;
+  _applyZoneNotifyUI(id, z.notify);
   try {
     const r = await fetch(`/zones/${id}/notify`, { method:'POST' });
     const d = await r.json();
-    const z = zonesData.find(z => z.id === id);
-    if (z) z.notify = d.notify;
-    fetchZones();
-  } catch(_) {}
+    z.notify = d.notify;
+  } catch(_) {
+    z.notify = !z.notify;
+  } finally {
+    pendingNotify.delete(id);
+    _applyZoneNotifyUI(id, z.notify);
+  }
 }
 
 // ── Toggle controls ───────────────────────────────────────────────────────────
@@ -341,8 +408,11 @@ async function pollStatus() {
 
     // Notif summary
     if (d.notif_always_on != null) {
-      document.getElementById('notifAlwaysOn').checked = d.notif_always_on;
-      _applyAlwaysOn(d.notif_always_on);
+      const settingsOpen = document.getElementById('settingsBackdrop').classList.contains('open');
+      if (!settingsOpen) {
+        document.getElementById('notifAlwaysOn').checked = d.notif_always_on;
+        _applyAlwaysOn(d.notif_always_on);
+      }
     }
     if (d.notif_cooldown != null) {
       const el      = document.getElementById('notifCooldownBadge');
@@ -355,14 +425,20 @@ async function pollStatus() {
       document.getElementById('notifTooltipInterval').textContent = `Interval: ${mins} menit`;
       document.getElementById('notifTooltipTime').textContent     = `Jam: ${timeStr}`;
 
-      if (!inWin && !d.notif_always_on) {
-        el.textContent = 'Tidak Aktif';
+      if (zonesLoaded && zonesData.length === 0) {
+        el.textContent = 'Tidak ada zona';
+        el.className   = 'notif-badge notif-badge-err';
+      } else if (zonesLoaded && !zonesData.some(z => z.notify)) {
+        el.textContent = 'Notifikasi Mati';
         el.className   = 'notif-badge notif-badge-err';
       } else if (cd > 0) {
         const m = Math.floor(cd / 60);
         const s = cd % 60;
         el.textContent = (m > 0 ? m + 'm ' : '') + s + 's';
         el.className   = 'notif-badge notif-badge-warn';
+      } else if (!inWin && !d.notif_always_on) {
+        el.textContent = 'Tidak Aktif';
+        el.className   = 'notif-badge notif-badge-err';
       } else {
         el.textContent = 'Siap';
         el.className   = 'notif-badge notif-badge-ok';

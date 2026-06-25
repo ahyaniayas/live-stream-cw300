@@ -45,12 +45,12 @@ def status():
         notif_time_end   = state._notif_settings["time_end"]
         notif_history    = list(state._notif_history)
 
-    # Sisa cooldown = interval - (now - last_notif) zona yang aktif notif
+    # Sisa cooldown = interval - (now - last_notif) dari zona manapun yang pernah notif
     now = time.monotonic()
     cooldown = 0
     with state._zones_lock:
         for z in state._zones.values():
-            if z.get("notify") and z.get("last_notif", 0.0) > 0:
+            if z.get("last_notif", 0.0) > 0:
                 remaining = notif_interval - (now - z["last_notif"])
                 if remaining > cooldown:
                     cooldown = remaining

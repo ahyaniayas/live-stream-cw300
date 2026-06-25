@@ -170,17 +170,22 @@ Buka browser: **http://\<IP-SERVER\>:3001**
 ### Zona Deteksi
 - Buat zona poligon dengan klik langsung di video
 - Deteksi orang masuk zona berdasarkan overlap bounding box (bukan hanya titik tengah)
-- Counter orang saat ini dan total per zona
+- Counter orang saat ini dan total per zona — diperbarui otomatis tiap detik tanpa re-render kartu
 - Alert banner merah saat zona aktif
 - Reset counter per zona
+- Toggle notifikasi per zona via toggle switch (🔕 / 🔔) di sudut kartu
 
 ### Notifikasi Telegram
 - Kirim foto frame saat orang terdeteksi di zona
-- Toggle notifikasi per zona (ikon 🔔 di card zona)
 - **Selalu Aktif** — kirim notifikasi kapan saja, abaikan jam aktif
-- Jam aktif — batasi pengiriman pada rentang waktu tertentu (mendukung lintas tengah malam)
+- Jam aktif — batasi pengiriman pada rentang waktu tertentu (mendukung lintas tengah malam); input format 24 jam di semua browser
 - Interval pengiriman — cegah spam notifikasi
-- Cooldown badge real-time: hitung mundur kuning → "Siap" hijau
+- Cooldown badge real-time dengan prioritas status:
+  - **Tidak ada zona** (merah) — belum ada zona dibuat
+  - **Notifikasi Mati** (merah) — semua zona notify dimatikan
+  - **Xm Xs** (orange) — cooldown berjalan (global, dari notif zona manapun)
+  - **Tidak Aktif** (merah) — di luar jam aktif
+  - **Siap** (hijau) — siap kirim
 - Riwayat 5 notifikasi terakhir
 - Tombol tes kirim
 

@@ -120,9 +120,9 @@
         </div>
         <div class="notif-time-row" id="notifTimeRow">
           <label>Jam aktif</label>
-          <input type="time" id="notifStart" class="setting-input" value="00:00">
+          <input type="text" id="notifStart" class="setting-input time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="00:00" oninput="onTimeInput(this)" onblur="onTimeBlur(this)">
           <span class="notif-sep">–</span>
-          <input type="time" id="notifEnd" class="setting-input" value="23:59">
+          <input type="text" id="notifEnd" class="setting-input time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="23:59" oninput="onTimeInput(this)" onblur="onTimeBlur(this)">
         </div>
         <div style="padding:4px 20px 8px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-orange btn-sm" onclick="saveNotifSettings()">Simpan</button>
