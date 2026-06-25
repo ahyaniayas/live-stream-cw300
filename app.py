@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;+discardcorrupt"
 
-from config import reload_dotenv, log, APP_DEBUG
+from config import reload_dotenv, log, APP_DEBUG, NOTIF_HISTORY_DISPLAY
 reload_dotenv()
 
 import database
@@ -26,7 +26,7 @@ app = Flask(__name__)
 database.init_db()
 state._zones = database.load_zones()
 state._notif_settings.update(database.load_notif_settings())
-state._notif_history = database.load_notif_history(limit=5)
+state._notif_history = database.load_notif_history(limit=NOTIF_HISTORY_DISPLAY)
 
 _app = database.load_app_settings()
 state._detect_on   = _app["detect_on"]

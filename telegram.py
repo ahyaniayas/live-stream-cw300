@@ -8,6 +8,7 @@ import cv2
 
 import state
 import database
+from config import NOTIF_HISTORY_DISPLAY
 from config import reload_dotenv, tg_token, tg_chat, log
 
 
@@ -101,7 +102,7 @@ def _worker():
         database.insert_notif_history(zone_name, count, dt)
         with state._notif_lock:
             state._notif_history.insert(0, {"zone": zone_name, "count": count, "time": dt})
-            del state._notif_history[5:]
+            del state._notif_history[NOTIF_HISTORY_DISPLAY:]
         state._notif_queue.task_done()
 
 

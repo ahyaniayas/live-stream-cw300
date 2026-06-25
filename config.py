@@ -56,7 +56,8 @@ YOLO_MODEL     = os.path.join(BASE_DIR, "models",
 GATE_ALERT_COOLDOWN = _int("GATE_ALERT_COOLDOWN", 10)
 GATE_DEACTIVATE_SEC = _int("GATE_DEACTIVATE_SEC", 3)
 
-NOTIF_HISTORY_MAX   = _int("NOTIF_HISTORY_MAX", 100)
+NOTIF_HISTORY_DISPLAY = _int("NOTIF_HISTORY_DISPLAY", 5)
+NOTIF_HISTORY_MAX     = _int("NOTIF_HISTORY_MAX", 100)
 
 # Telegram — selalu dibaca ulang dari env (tidak di-cache)
 def tg_token(): return _str("TELEGRAM_BOT_TOKEN")

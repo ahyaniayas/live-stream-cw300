@@ -182,6 +182,22 @@
     <div class="notif-hist-list" id="notifHistList">
       <span class="empty">Belum ada notifikasi terkirim.</span>
     </div>
+    <div class="notif-hist-footer">
+      <button class="btn-hist-all" id="histAllBtn" onclick="toggleHistAll()">Lihat Semua</button>
+    </div>
+  </div>
+
+  <!-- Modal Riwayat Semua -->
+  <div id="histModalBackdrop" class="hist-modal-backdrop" onclick="closeHistModal()">
+    <div class="hist-modal" onclick="event.stopPropagation()">
+      <div class="hist-modal-hdr">
+        <span id="histModalTitle">Semua Riwayat Notifikasi</span>
+        <button class="hist-modal-close" onclick="closeHistModal()">✕</button>
+      </div>
+      <div class="hist-modal-body" id="histModalList">
+        <span class="empty">Memuat...</span>
+      </div>
+    </div>
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>

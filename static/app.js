@@ -281,7 +281,7 @@ function openSettings() {
   fetchNotifSettings();
 }
 function closeSettings() { document.getElementById('settingsBackdrop').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key==='Escape') closeSettings(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape') { closeSettings(); closeHistModal(); } });
 
 async function fetchNotifSettings() {
   try {
@@ -336,6 +336,37 @@ function _setNotifStatus(msg, ok) {
   el.textContent = msg;
   el.className   = 'notif-status ' + (ok ? 'ok' : 'err');
   setTimeout(() => { el.textContent = ''; el.className = 'notif-status'; }, 4000);
+}
+
+function _renderHistItems(items) {
+  if (!items.length) return '<span class="empty">Belum ada notifikasi terkirim.</span>';
+  return items.map(h => `
+    <div class="notif-hist-item">
+      <span class="notif-hist-icon">🔔</span>
+      <div class="notif-hist-info">
+        <div class="notif-hist-zone">${h.zone}</div>
+        <div class="notif-hist-time">${h.time}</div>
+      </div>
+      <span class="notif-hist-count">${h.count} orang</span>
+    </div>`).join('');
+}
+
+async function toggleHistAll() {
+  document.getElementById('histModalBackdrop').classList.add('open');
+  const el  = document.getElementById('histModalList');
+  const hdr = document.getElementById('histModalTitle');
+  el.innerHTML = '<span class="empty">Memuat...</span>';
+  hdr.textContent = 'Semua Riwayat Notifikasi';
+  try {
+    const r = await fetch('/notif/history');
+    const d = await r.json();
+    hdr.textContent = `Semua Riwayat Notifikasi (${d.length})`;
+    el.innerHTML = _renderHistItems(d);
+  } catch(_) { el.innerHTML = '<span class="empty">Gagal memuat.</span>'; }
+}
+
+function closeHistModal() {
+  document.getElementById('histModalBackdrop').classList.remove('open');
 }
 
 function _applyZoneNotifyUI(id, on) {
@@ -445,20 +476,7 @@ async function pollStatus() {
       }
     }
     if (d.notif_history != null) {
-      const el = document.getElementById('notifHistList');
-      if (!d.notif_history.length) {
-        el.innerHTML = '<span class="empty">Belum ada notifikasi terkirim.</span>';
-      } else {
-        el.innerHTML = d.notif_history.map(h => `
-          <div class="notif-hist-item">
-            <span class="notif-hist-icon">🔔</span>
-            <div class="notif-hist-info">
-              <div class="notif-hist-zone">${h.zone}</div>
-              <div class="notif-hist-time">${h.time}</div>
-            </div>
-            <span class="notif-hist-count">${h.count} orang</span>
-          </div>`).join('');
-      }
+      document.getElementById('notifHistList').innerHTML = _renderHistItems(d.notif_history);
     }
     if (d.categories) {
       document.getElementById('catPerson').checked  = d.categories.person;

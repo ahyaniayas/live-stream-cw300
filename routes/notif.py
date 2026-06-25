@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 import state
 import database
 import telegram
+from config import NOTIF_HISTORY_MAX
 
 bp = Blueprint("notif", __name__)
 
@@ -28,6 +29,11 @@ def notif_settings_route():
         snap = dict(state._notif_settings)
     database.save_notif_settings(snap)
     return jsonify(ok=True, **snap)
+
+
+@bp.route("/notif/history", methods=["GET"])
+def notif_history_all():
+    return jsonify(database.load_notif_history(limit=NOTIF_HISTORY_MAX))
 
 
 @bp.route("/notif/test", methods=["POST"])
