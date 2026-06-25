@@ -67,9 +67,12 @@ def get_model():
     if state._model is None:
         with state._model_lock:
             if state._model is None:
-                log(f"Memuat model YOLO: {YOLO_MODEL}")
+                import torch
+                device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                log(f"Memuat model YOLO: {YOLO_MODEL} (device: {device})")
                 from ultralytics import YOLO
                 state._model = YOLO(YOLO_MODEL)
+                state._model.to(device)
                 log("Model YOLO siap")
     return state._model
 
