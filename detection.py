@@ -118,7 +118,7 @@ class Detector:
                         state._frame_buffer.append(frame.copy())
                     self._last_buf = now
 
-                results = get_model()(frame, conf=DETECT_CONF, verbose=False)
+                results = get_model()(frame, conf=DETECT_CONF, verbose=False, half=True)
                 h, w    = frame.shape[:2]
 
                 dets             = []
