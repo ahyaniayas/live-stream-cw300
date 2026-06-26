@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#1a1a2e"/>
+  <!-- Bodi kamera -->
+  <rect x="4" y="11" width="16" height="10" rx="2" fill="#e05a00"/>
+  <!-- Lensa -->
+  <circle cx="23" cy="16" r="5" fill="#2a2a3e" stroke="#e05a00" stroke-width="1.5"/>
+  <circle cx="23" cy="16" r="2.5" fill="#111"/>
+  <circle cx="24" cy="15" r="0.7" fill="#555"/>
+  <!-- Kaki mount -->
+  <rect x="10" y="21" width="4" height="4" rx="1" fill="#c44d00"/>
+  <rect x="7" y="24" width="10" height="2" rx="1" fill="#c44d00"/>
+  <!-- Lampu merah -->
+  <circle cx="7" cy="13" r="1.2" fill="#ff4444"/>
+</svg>
