@@ -18,14 +18,12 @@ def notif_settings_route():
 
     data = request.get_json(force=True, silent=True) or {}
     with state._notif_lock:
-        if "interval" in data:
-            state._notif_settings["interval"]   = max(60, int(data["interval"]))
-        if "always_on" in data:
-            state._notif_settings["always_on"]  = bool(data["always_on"])
-        if "time_start" in data:
-            state._notif_settings["time_start"] = str(data["time_start"])[:5]
-        if "time_end" in data:
-            state._notif_settings["time_end"]   = str(data["time_end"])[:5]
+        if "interval"   in data: state._notif_settings["interval"]   = max(60, int(data["interval"]))
+        if "always_on"  in data: state._notif_settings["always_on"]  = bool(data["always_on"])
+        if "time_start" in data: state._notif_settings["time_start"] = str(data["time_start"])[:5]
+        if "time_end"   in data: state._notif_settings["time_end"]   = str(data["time_end"])[:5]
+        if "send_photo" in data: state._notif_settings["send_photo"] = bool(data["send_photo"])
+        if "send_video" in data: state._notif_settings["send_video"] = bool(data["send_video"])
         snap = dict(state._notif_settings)
     database.save_notif_settings(snap)
     return jsonify(ok=True, **snap)

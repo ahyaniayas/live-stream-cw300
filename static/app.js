@@ -287,10 +287,12 @@ async function fetchNotifSettings() {
   try {
     const r = await fetch('/notif/settings');
     const d = await r.json();
-    document.getElementById('notifInterval').value  = Math.round(d.interval / 60);
-    document.getElementById('notifAlwaysOn').checked = d.always_on || false;
-    document.getElementById('notifStart').value     = d.time_start;
-    document.getElementById('notifEnd').value       = d.time_end;
+    document.getElementById('notifInterval').value    = Math.round(d.interval / 60);
+    document.getElementById('notifAlwaysOn').checked  = d.always_on  || false;
+    document.getElementById('notifStart').value       = d.time_start;
+    document.getElementById('notifEnd').value         = d.time_end;
+    document.getElementById('notifSendPhoto').checked = d.send_photo !== false;
+    document.getElementById('notifSendVideo').checked = d.send_video || false;
     _applyAlwaysOn(d.always_on || false);
   } catch(_) {}
 }
@@ -312,6 +314,8 @@ async function saveNotifSettings() {
     always_on:  document.getElementById('notifAlwaysOn').checked,
     time_start: document.getElementById('notifStart').value,
     time_end:   document.getElementById('notifEnd').value,
+    send_photo: document.getElementById('notifSendPhoto').checked,
+    send_video: document.getElementById('notifSendVideo').checked,
   };
   try {
     await fetch('/notif/settings', {
@@ -441,7 +445,9 @@ async function pollStatus() {
     if (d.notif_always_on != null) {
       const settingsOpen = document.getElementById('settingsBackdrop').classList.contains('open');
       if (!settingsOpen) {
-        document.getElementById('notifAlwaysOn').checked = d.notif_always_on;
+        document.getElementById('notifAlwaysOn').checked  = d.notif_always_on;
+        document.getElementById('notifSendPhoto').checked = d.notif_send_photo !== false;
+        document.getElementById('notifSendVideo').checked = d.notif_send_video || false;
         _applyAlwaysOn(d.notif_always_on);
       }
     }

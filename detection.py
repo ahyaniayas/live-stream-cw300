@@ -10,6 +10,7 @@ import state
 from config import (
     STREAM_URL, DETECT_CONF, DETECT_MAX_FPS, STREAM_MAX_FPS,
     YOLO_MODEL, GATE_TARGET_LABELS, label_category, log,
+    NOTIF_VIDEO_FPS, NOTIF_VIDEO_DURATION,
 )
 import zones as zone_mod
 
@@ -79,8 +80,10 @@ def get_model():
 
 class Detector:
     def __init__(self, grabber: FrameGrabber):
-        self.grabber = grabber
-        self.running = True
+        self.grabber      = grabber
+        self.running      = True
+        self._last_buf    = 0.0
+        self._buf_interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
         threading.Thread(target=self._loop, daemon=True).start()
 
     def _loop(self):
@@ -107,6 +110,13 @@ class Detector:
                 if frame is None:
                     time.sleep(0.05)
                     continue
+
+                # Sample frame ke buffer untuk klip video
+                now = time.monotonic()
+                if now - self._last_buf >= self._buf_interval:
+                    with state._frame_buffer_lock:
+                        state._frame_buffer.append(frame.copy())
+                    self._last_buf = now
 
                 results = get_model()(frame, conf=DETECT_CONF, verbose=False)
                 h, w    = frame.shape[:2]
@@ -176,6 +186,9 @@ def ensure_started():
         if state._detector is not None:
             return
         log("Memulai FrameGrabber dan Detector...")
+        import collections
+        buf_size = NOTIF_VIDEO_FPS * (NOTIF_VIDEO_DURATION + 5)
+        state._frame_buffer = collections.deque(maxlen=buf_size)
         state._grabber  = FrameGrabber(STREAM_URL)
         state._detector = Detector(state._grabber)
 

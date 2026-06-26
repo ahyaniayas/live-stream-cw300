@@ -124,6 +124,20 @@
           <span class="notif-sep">–</span>
           <input type="text" id="notifEnd" class="setting-input time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="23:59" oninput="onTimeInput(this)" onblur="onTimeBlur(this)">
         </div>
+        <div class="setting-row">
+          <span>Kirim Foto</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="notifSendPhoto" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <span>Kirim Video (10 detik)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="notifSendVideo">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
         <div style="padding:4px 20px 8px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-orange btn-sm" onclick="saveNotifSettings()">Simpan</button>
           <button class="btn btn-panel btn-sm" onclick="testNotif()">Tes Kirim</button>

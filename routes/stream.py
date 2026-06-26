@@ -40,9 +40,11 @@ def status():
         counts[d["label"]] = counts.get(d["label"], 0) + 1
     with state._notif_lock:
         notif_interval   = state._notif_settings["interval"]
-        notif_always_on  = state._notif_settings.get("always_on", False)
+        notif_always_on  = state._notif_settings.get("always_on",  False)
         notif_time_start = state._notif_settings["time_start"]
         notif_time_end   = state._notif_settings["time_end"]
+        notif_send_photo = state._notif_settings.get("send_photo", True)
+        notif_send_video = state._notif_settings.get("send_video", False)
         notif_history    = list(state._notif_history)
 
     # Sisa cooldown = interval - (now - last_notif) dari zona manapun yang pernah notif
@@ -67,6 +69,8 @@ def status():
         notif_time_start=notif_time_start,
         notif_time_end=notif_time_end,
         notif_cooldown=cooldown,
+        notif_send_photo=notif_send_photo,
+        notif_send_video=notif_send_video,
         notif_history=notif_history,
     )
 

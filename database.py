@@ -48,10 +48,12 @@ def init_db():
             "cat_vehicle":      "true",
             "cat_other":        "true",
             # Notifikasi — default dari .env
-            "notif_interval":   os.environ.get("NOTIF_INTERVAL",   "300"),
+            "notif_interval":   os.environ.get("NOTIF_INTERVAL",    "300"),
             "notif_always_on":  os.environ.get("NOTIF_ALWAYS_ON",  "false"),
             "notif_time_start": os.environ.get("NOTIF_TIME_START", "00:00"),
             "notif_time_end":   os.environ.get("NOTIF_TIME_END",   "23:59"),
+            "notif_send_photo": os.environ.get("NOTIF_SEND_PHOTO", "true"),
+            "notif_send_video": os.environ.get("NOTIF_SEND_VIDEO", "false"),
         }
         for k, v in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
@@ -158,23 +160,25 @@ def load_app_settings():
 
 
 def load_notif_settings():
+    def _b(key, default):
+        return _get_setting(key, default).lower() in ("1", "true", "yes")
     return {
         "interval":   int(_get_setting("notif_interval",   "300")),
-        "always_on":  _get_setting("notif_always_on", "false").lower() in ("1", "true", "yes"),
+        "always_on":  _b("notif_always_on",  "false"),
         "time_start": _get_setting("notif_time_start", "00:00"),
         "time_end":   _get_setting("notif_time_end",   "23:59"),
+        "send_photo": _b("notif_send_photo", "true"),
+        "send_video": _b("notif_send_video", "false"),
     }
 
 
 def save_notif_settings(d):
-    if "interval" in d:
-        _set_setting("notif_interval",   d["interval"])
-    if "always_on" in d:
-        _set_setting("notif_always_on",  "true" if d["always_on"] else "false")
-    if "time_start" in d:
-        _set_setting("notif_time_start", d["time_start"])
-    if "time_end" in d:
-        _set_setting("notif_time_end",   d["time_end"])
+    if "interval"   in d: _set_setting("notif_interval",   d["interval"])
+    if "always_on"  in d: _set_setting("notif_always_on",  "true" if d["always_on"]  else "false")
+    if "time_start" in d: _set_setting("notif_time_start", d["time_start"])
+    if "time_end"   in d: _set_setting("notif_time_end",   d["time_end"])
+    if "send_photo" in d: _set_setting("notif_send_photo", "true" if d["send_photo"] else "false")
+    if "send_video" in d: _set_setting("notif_send_video", "true" if d["send_video"] else "false")
 
 
 # ── Riwayat Notifikasi ────────────────────────────────────────
