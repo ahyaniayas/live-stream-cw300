@@ -171,7 +171,7 @@ class Detector:
 def _encode_loop():
     """Encode frame 1× per interval, hasilnya dibagi ke semua client."""
     frame_delay  = 1.0 / STREAM_MAX_FPS
-    buf_interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
+    buf_interval = 1.0 / max(1, min(NOTIF_VIDEO_FPS, STREAM_MAX_FPS))
     frame_t      = time.monotonic()
     fps_t        = time.monotonic()
     last_buf_t   = 0.0
