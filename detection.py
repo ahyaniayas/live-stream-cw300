@@ -78,10 +78,8 @@ def get_model():
 
 class Detector:
     def __init__(self, grabber: FrameGrabber):
-        self.grabber      = grabber
-        self.running      = True
-        self._last_buf    = 0.0
-        self._buf_interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
+        self.grabber  = grabber
+        self.running  = True
         threading.Thread(target=self._loop, daemon=True).start()
 
     def _loop(self):
@@ -108,13 +106,6 @@ class Detector:
                 if frame is None:
                     time.sleep(0.05)
                     continue
-
-                # Sample frame ke buffer untuk klip video
-                now = time.monotonic()
-                if now - self._last_buf >= self._buf_interval:
-                    with state._frame_buffer_lock:
-                        state._frame_buffer.append(frame.copy())
-                    self._last_buf = now
 
                 results = get_model()(frame, conf=DETECT_CONF, verbose=False, half=True)
                 h, w    = frame.shape[:2]
@@ -179,10 +170,12 @@ class Detector:
 
 def _encode_loop():
     """Encode frame 1× per interval, hasilnya dibagi ke semua client."""
-    frame_delay = 1.0 / STREAM_MAX_FPS
-    frame_t     = time.monotonic()
-    fps_t       = time.monotonic()
-    fps_count   = 0
+    frame_delay  = 1.0 / STREAM_MAX_FPS
+    buf_interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
+    frame_t      = time.monotonic()
+    fps_t        = time.monotonic()
+    last_buf_t   = 0.0
+    fps_count    = 0
 
     while True:
         try:
@@ -190,6 +183,13 @@ def _encode_loop():
             if out is None:
                 time.sleep(0.05)
                 continue
+
+            # Sample frame ke buffer pada laju NOTIF_VIDEO_FPS (bukan DETECT_MAX_FPS)
+            now = time.monotonic()
+            if now - last_buf_t >= buf_interval:
+                with state._frame_buffer_lock:
+                    state._frame_buffer.append(out.copy())
+                last_buf_t = now
 
             with state._detect_lock:
                 do_detect = state._detect_on
