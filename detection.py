@@ -44,8 +44,6 @@ class FrameGrabber:
                         self.frame     = None
                         self.connected = False
                     break
-                if np.std(frame) < 8:
-                    continue
                 if not _logged:
                     rw = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
                     rh = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -179,32 +177,15 @@ class Detector:
                 time.sleep(wait)
 
 
-def ensure_started():
-    if state._detector is not None:
-        return
-    with state._init_lock:
-        if state._detector is not None:
-            return
-        log("Memulai FrameGrabber dan Detector...")
-        import collections
-        buf_size = NOTIF_VIDEO_FPS * (NOTIF_VIDEO_DURATION + 5)
-        state._frame_buffer = collections.deque(maxlen=buf_size)
-        state._grabber  = FrameGrabber(STREAM_URL)
-        state._detector = Detector(state._grabber)
-
-
-def mjpeg_stream():
-    ensure_started()
-
+def _encode_loop():
+    """Encode frame 1× per interval, hasilnya dibagi ke semua client."""
+    frame_delay = 1.0 / STREAM_MAX_FPS
+    frame_t     = time.monotonic()
     fps_t       = time.monotonic()
     fps_count   = 0
-    frame_t     = time.monotonic()
-    frame_delay = 1.0 / STREAM_MAX_FPS
 
     while True:
         try:
-            # Selalu ambil frame segar dari grabber agar stream tetap smooth
-            # meskipun DETECT_MAX_FPS rendah
             out = state._grabber.read()
             if out is None:
                 time.sleep(0.05)
@@ -229,15 +210,13 @@ def mjpeg_stream():
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
             out = zone_mod.draw_zones(out)
-            fps_count += 1
 
             ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            if not ok:
-                continue
+            if ok:
+                with state._last_jpeg_lock:
+                    state._last_jpeg = buf.tobytes()
 
-            yield (b"--frame\r\n"
-                   b"Content-Type: image/jpeg\r\n\r\n" + buf.tobytes() + b"\r\n")
-
+            fps_count += 1
             now = time.monotonic()
             if now - fps_t >= 1.0:
                 state._stream_fps = round(fps_count / (now - fps_t))
@@ -250,6 +229,42 @@ def mjpeg_stream():
             if wait > 0:
                 time.sleep(wait)
             frame_t = time.monotonic()
+
+        except Exception as exc:
+            log(f"Encode loop error: {exc}")
+            time.sleep(0.1)
+
+
+def ensure_started():
+    if state._detector is not None:
+        return
+    with state._init_lock:
+        if state._detector is not None:
+            return
+        log("Memulai FrameGrabber, Detector, dan Encoder...")
+        import collections
+        buf_size = NOTIF_VIDEO_FPS * (NOTIF_VIDEO_DURATION + 5)
+        state._frame_buffer = collections.deque(maxlen=buf_size)
+        state._grabber  = FrameGrabber(STREAM_URL)
+        state._detector = Detector(state._grabber)
+        state._encoder  = threading.Thread(target=_encode_loop, daemon=True, name="jpeg-encoder")
+        state._encoder.start()
+
+
+def mjpeg_stream():
+    ensure_started()
+    last_buf = None
+    while True:
+        try:
+            with state._last_jpeg_lock:
+                buf = state._last_jpeg
+
+            if buf and buf is not last_buf:
+                last_buf = buf
+                yield (b"--frame\r\n"
+                       b"Content-Type: image/jpeg\r\n\r\n" + buf + b"\r\n")
+            else:
+                time.sleep(0.005)
 
         except GeneratorExit:
             return

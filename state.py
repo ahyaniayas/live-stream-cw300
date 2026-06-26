@@ -43,9 +43,14 @@ _notif_history: list                   = []
 _frame_buffer:      collections.deque  = collections.deque()
 _frame_buffer_lock: threading.Lock     = threading.Lock()
 
+# Shared encoded JPEG — di-encode 1× oleh encoder thread, dibaca semua client
+_last_jpeg:      bytes          = b""
+_last_jpeg_lock: threading.Lock = threading.Lock()
+
 # Instance runtime (di-set oleh detection.py)
 _grabber   = None
 _detector  = None
+_encoder   = None
 _init_lock = threading.Lock()
 
 # YOLO model
