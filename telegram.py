@@ -36,15 +36,24 @@ def is_in_time_window():
 
 def _encode_video_bytes(frames):
     if not frames:
+        log("Video encode: buffer kosong, skip")
         return None
-    tmpfile = tempfile.mktemp(suffix=".mp4")
+    fd, tmpfile = tempfile.mkstemp(suffix=".mp4")
+    os.close(fd)
     try:
-        h, w = frames[0].shape[:2]
-        out  = cv2.VideoWriter(tmpfile, cv2.VideoWriter_fourcc(*"mp4v"),
-                               float(NOTIF_VIDEO_FPS), (w, h))
+        h, w    = frames[0].shape[:2]
+        fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
+        writer  = cv2.VideoWriter(tmpfile, fourcc, float(NOTIF_VIDEO_FPS), (w, h))
+        if not writer.isOpened():
+            log("Video encode: VideoWriter gagal dibuka (codec mp4v tidak tersedia?)")
+            return None
         for f in frames:
-            out.write(f)
-        out.release()
+            writer.write(f)
+        writer.release()
+        size = os.path.getsize(tmpfile)
+        log(f"Video encode: {len(frames)} frame → {size} bytes")
+        if size == 0:
+            return None
         with open(tmpfile, "rb") as fh:
             return fh.read()
     except Exception as exc:
@@ -172,6 +181,7 @@ def send_media_group(caption, photo_frames, video_frames=None):
         body += _multipart_file(bd, key, filename, ct, data)
     body += b"--" + bd + b"--\r\n"
 
+    log(f"sendMediaGroup: {[m['type'] for m in media_list]}")
     try:
         url = f"https://api.telegram.org/bot{token}/sendMediaGroup"
         req = urllib.request.Request(url, data=body,
@@ -214,6 +224,7 @@ def _worker():
             n = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
             with state._frame_buffer_lock:
                 clip = list(state._frame_buffer)[-n:]
+            log(f"Notif foto+video: {len(photos)} foto, {len(clip)} frame buffer")
             send_media_group(caption, photos, clip)
 
         elif do_photo:
