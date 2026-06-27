@@ -10,7 +10,7 @@ bp = Blueprint("recorder", __name__)
 _RECORD_PATH = Path(RECORD_DIR) / "2k"
 
 # File dianggap masih direkam jika mtime < N detik yang lalu
-_RECORDING_THRESHOLD = 30
+_RECORDING_THRESHOLD = 60
 
 
 def _list_files():
