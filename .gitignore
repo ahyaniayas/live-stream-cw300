@@ -53,3 +53,6 @@ logs/
 
 # Docker override (local only)
 docker-compose.override.yml
+
+# AI / Knowledge graph
+graphify-out/
