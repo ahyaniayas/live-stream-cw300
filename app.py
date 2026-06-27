@@ -57,10 +57,11 @@ import detection
 detection.ensure_started()
 
 # ── Daftarkan blueprint ──────────────────────────────────────
-from routes import stream_bp, zones_bp, notif_bp
+from routes import stream_bp, zones_bp, notif_bp, recorder_bp
 app.register_blueprint(stream_bp)
 app.register_blueprint(zones_bp)
 app.register_blueprint(notif_bp)
+app.register_blueprint(recorder_bp)
 
 
 if __name__ == "__main__":

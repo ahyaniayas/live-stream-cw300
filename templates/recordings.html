@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rekaman — CW300</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .rec-wrap { width:100%; max-width:900px; display:flex; flex-direction:column; gap:16px; }
+
+    /* Header */
+    .rec-header { display:flex; align-items:center; gap:12px; }
+    .rec-header a { color:var(--muted); text-decoration:none; font-size:13px;
+                    display:flex; align-items:center; gap:4px; }
+    .rec-header a:hover { color:var(--txt); }
+    .rec-header h1 { flex:1; }
+    .rec-stats { font-size:12px; color:var(--muted); white-space:nowrap; }
+
+    /* Player */
+    .player-wrap { width:100%; background:#000; border-radius:14px; overflow:hidden;
+                   box-shadow:0 8px 30px rgba(0,0,0,.45);
+                   aspect-ratio:16/9; position:relative; }
+    .player-wrap.hidden { display:none; }
+    #player { width:100%; height:100%; display:block; }
+    .player-info { position:absolute; top:10px; left:12px;
+                   background:rgba(0,0,0,.65); border-radius:8px;
+                   padding:5px 10px; font-size:12px; color:#fff; }
+
+    /* Empty state */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+    .empty-state svg { margin-bottom:14px; opacity:.4; }
+    .empty-state p { font-size:14px; }
+
+    /* File list */
+    .file-list { display:flex; flex-direction:column; gap:6px; }
+    .day-group { background:var(--panel); border-radius:12px; overflow:hidden; }
+    .day-label { padding:10px 16px; font-size:12px; font-weight:600;
+                 color:var(--muted); background:var(--panel2);
+                 border-bottom:1px solid rgba(255,255,255,.06); }
+    .file-item { display:flex; align-items:center; gap:12px; padding:12px 16px;
+                 border-bottom:1px solid rgba(255,255,255,.04);
+                 cursor:pointer; transition:background .15s; }
+    .file-item:last-child { border-bottom:none; }
+    .file-item:hover { background:rgba(255,255,255,.04); }
+    .file-item.active { background:rgba(255,105,0,.12); }
+    .file-icon { width:36px; height:36px; background:var(--panel2); border-radius:8px;
+                 display:flex; align-items:center; justify-content:center;
+                 flex-shrink:0; color:var(--accent); }
+    .file-item.active .file-icon { background:rgba(255,105,0,.2); }
+    .file-meta { flex:1; min-width:0; }
+    .file-time { font-size:14px; font-weight:500; }
+    .file-size { font-size:12px; color:var(--muted); margin-top:2px; }
+    .file-actions { display:flex; gap:6px; flex-shrink:0; }
+    .btn-icon { background:var(--panel2); border:none; border-radius:8px;
+                padding:7px 12px; font-size:12px; font-weight:600; color:var(--txt);
+                cursor:pointer; display:flex; align-items:center; gap:5px;
+                transition:background .15s; white-space:nowrap; }
+    .btn-icon:hover { background:rgba(255,255,255,.1); }
+    .btn-play { color:var(--accent); }
+    .btn-del { color:var(--red); }
+    .btn-del:hover { background:rgba(239,68,68,.15); }
+
+    /* Loading skeleton */
+    .skel { background:var(--panel2); border-radius:8px; animation:shimmer 1.5s infinite; }
+    @keyframes shimmer {
+      0%,100% { opacity:.5 } 50% { opacity:1 }
+    }
+  </style>
+</head>
+<body>
+  <div class="rec-wrap">
+
+    <div class="rec-header">
+      <a href="/">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Live
+      </a>
+      <h1>Rekaman CCTV</h1>
+      <span class="rec-stats" id="statsText">Memuat…</span>
+    </div>
+
+    <!-- Video Player -->
+    <div class="player-wrap hidden" id="playerWrap">
+      <video id="player" controls preload="metadata"></video>
+      <div class="player-info" id="playerInfo"></div>
+    </div>
+
+    <!-- File List -->
+    <div class="file-list" id="fileList">
+      <!-- populated by JS -->
+    </div>
+
+  </div>
+
+  <script>
+    let _files = [];
+    let _activeFile = null;
+
+    function fmtSize(bytes) {
+      if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+      if (bytes >= 1048576)    return (bytes / 1048576).toFixed(0) + ' MB';
+      return (bytes / 1024).toFixed(0) + ' KB';
+    }
+
+    function parseFilename(name) {
+      // 20260627_214124.mp4 → {date: '2026-06-27', time: '21:41:24', label: '27 Jun 2026', dayKey: '2026-06-27'}
+      const m = name.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
+      if (!m) return { dayKey: name, label: name, time: name };
+      const [, Y, Mo, D, h, mi, s] = m;
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return {
+        dayKey: `${Y}-${Mo}-${D}`,
+        label: `${D} ${months[+Mo - 1]} ${Y}`,
+        time: `${h}:${mi}:${s}`,
+      };
+    }
+
+    function groupByDay(files) {
+      const groups = {};
+      const order = [];
+      for (const f of files) {
+        const p = parseFilename(f.name);
+        if (!groups[p.dayKey]) { groups[p.dayKey] = { label: p.label, files: [] }; order.push(p.dayKey); }
+        groups[p.dayKey].files.push({ ...f, ...p });
+      }
+      return order.map(k => groups[k]);
+    }
+
+    function playFile(name) {
+      _activeFile = name;
+      const player = document.getElementById('player');
+      const wrap   = document.getElementById('playerWrap');
+      const info   = document.getElementById('playerInfo');
+      const p      = parseFilename(name);
+
+      player.src = '/recordings/video/' + encodeURIComponent(name);
+      wrap.classList.remove('hidden');
+      info.textContent = p.label + ', ' + p.time;
+      player.play().catch(() => {});
+
+      // scroll player into view
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // refresh active highlight
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.name === name);
+      });
+    }
+
+    async function deleteFile(name) {
+      if (!confirm(`Hapus ${name}?`)) return;
+      const resp = await fetch('/recordings/delete/' + encodeURIComponent(name), { method: 'DELETE' });
+      if (resp.ok) {
+        if (_activeFile === name) {
+          document.getElementById('player').src = '';
+          document.getElementById('playerWrap').classList.add('hidden');
+          _activeFile = null;
+        }
+        _files = _files.filter(f => f.name !== name);
+        render(_files);
+      }
+    }
+
+    function render(files) {
+      const list = document.getElementById('fileList');
+      const stats = document.getElementById('statsText');
+
+      if (!files.length) {
+        list.innerHTML = `<div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="3"/>
+            <path d="M10 8l6 4-6 4V8z"/>
+          </svg>
+          <p>Belum ada rekaman</p>
+        </div>`;
+        stats.textContent = '0 file';
+        return;
+      }
+
+      const total = files.reduce((s, f) => s + f.size, 0);
+      stats.textContent = `${files.length} file · ${fmtSize(total)}`;
+
+      const groups = groupByDay(files);
+      list.innerHTML = groups.map(g => `
+        <div class="day-group">
+          <div class="day-label">${g.label}</div>
+          ${g.files.map(f => `
+            <div class="file-item ${_activeFile === f.name ? 'active' : ''}"
+                 data-name="${f.name}" onclick="playFile('${f.name}')">
+              <div class="file-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+              </div>
+              <div class="file-meta">
+                <div class="file-time">${f.time}</div>
+                <div class="file-size">${fmtSize(f.size)}</div>
+              </div>
+              <div class="file-actions" onclick="event.stopPropagation()">
+                <button class="btn-icon btn-play" onclick="playFile('${f.name}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  Putar
+                </button>
+                <a class="btn-icon" href="/recordings/video/${encodeURIComponent(f.name)}" download="${f.name}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Unduh
+                </a>
+                <button class="btn-icon btn-del" onclick="deleteFile('${f.name}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    async function load() {
+      const list = document.getElementById('fileList');
+      list.innerHTML = `<div class="skel" style="height:60px;border-radius:12px"></div>
+                        <div class="skel" style="height:60px;border-radius:12px;opacity:.6"></div>`;
+      try {
+        const resp = await fetch('/recordings/list');
+        const data = await resp.json();
+        _files = data.files || [];
+        render(_files);
+      } catch {
+        list.innerHTML = '<div class="empty-state"><p>Gagal memuat daftar rekaman</p></div>';
+        document.getElementById('statsText').textContent = '';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

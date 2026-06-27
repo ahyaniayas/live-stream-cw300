@@ -49,6 +49,11 @@ button.btn { padding:8px 16px; border:none; border-radius:9px;
              transition:opacity .15s; }
 button.btn:hover { opacity:.82; }
 .btn-sm { padding:5px 11px !important; font-size:12px !important; }
+.btn-rec { padding:8px 14px; background:var(--panel2); border:none; border-radius:9px;
+           font-size:13px; font-weight:600; cursor:pointer; color:var(--txt);
+           display:flex; align-items:center; gap:6px; text-decoration:none;
+           transition:background .15s; }
+.btn-rec:hover { background:rgba(255,255,255,.1); }
 
 /* Toggle switch */
 .toggle-switch { position:relative; width:48px; height:26px; flex-shrink:0; }

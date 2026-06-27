@@ -85,6 +85,8 @@ ZONE_PALETTE = [
 
 DB_PATH = os.path.join(BASE_DIR, "cctv_detect.db")
 
+RECORD_DIR = _str("RECORD_DIR", os.path.join(BASE_DIR, "recordings"))
+
 
 # ── Helpers ───────────────────────────────────────────────────
 def label_category(label):
