@@ -1,6 +1,6 @@
 import os
+import subprocess
 from pathlib import Path
-from datetime import datetime
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request, send_file
 
@@ -83,6 +83,41 @@ def recordings_video(filename):
     if not path.exists() or path.suffix.lower() != ".mp4":
         abort(404)
     return _serve_range(path)
+
+
+@bp.route("/recordings/stream/<filename>")
+def recordings_stream(filename):
+    """Transcode HEVC → H.264 on-the-fly sehingga bisa diputar di semua browser."""
+    path = _RECORD_PATH / filename
+    if not path.exists() or path.suffix.lower() != ".mp4":
+        abort(404)
+
+    cmd = [
+        "ffmpeg", "-i", str(path),
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+        "-c:a", "aac",
+        "-f", "mp4",
+        "-movflags", "frag_keyframe+empty_moov",
+        "pipe:1",
+    ]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+    def _generate():
+        try:
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            proc.kill()
+            proc.wait()
+
+    return Response(
+        _generate(),
+        mimetype="video/mp4",
+        headers={"X-Accel-Buffering": "no"},
+    )
 
 
 @bp.route("/recordings/delete/<filename>", methods=["DELETE"])
