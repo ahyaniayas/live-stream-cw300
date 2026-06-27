@@ -69,15 +69,11 @@
     .btn-del { color:var(--red); }
     .btn-del:hover { background:rgba(239,68,68,.15); }
 
-    /* Warning toast */
-    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
-             background:#1e1e2e; border:1px solid rgba(239,68,68,.4);
-             color:var(--txt); border-radius:12px; padding:14px 20px;
-             display:flex; align-items:center; gap:10px; font-size:13px;
-             box-shadow:0 8px 24px rgba(0,0,0,.5); transition:transform .3s ease;
-             z-index:100; max-width:360px; }
-    #toast.show { transform:translateX(-50%) translateY(0); }
-    #toast svg { flex-shrink:0; color:var(--red); }
+    /* Warning badge */
+    #warnBadge { display:none; align-items:center; gap:4px;
+                 background:rgba(239,68,68,.15); color:var(--red);
+                 border-radius:6px; padding:3px 9px; font-size:12px; font-weight:600; }
+    #warnBadge.show { display:inline-flex; }
 
     /* Loading skeleton */
     .skel { background:var(--panel2); border-radius:8px; animation:shimmer 1.5s infinite; }
@@ -96,6 +92,9 @@
         Live
       </a>
       <h1>Rekaman CCTV</h1>
+      <span id="warnBadge">
+        <span class="dot-blink"></span>Sedang direkam
+      </span>
       <span class="rec-stats" id="statsText">Memuat…</span>
     </div>
 
@@ -110,20 +109,11 @@
 
   </div>
 
-  <!-- Toast peringatan -->
-  <div id="toast">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-    <span id="toastMsg">Rekaman ini masih berlangsung. Tunggu hingga segment selesai sebelum memutar.</span>
-  </div>
 
   <script>
     let _files = [];
     let _activeFile = null;
-    let _toastTimer = null;
+    let _warnTimer = null;
 
     function fmtSize(bytes) {
       if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -154,15 +144,15 @@
       return order.map(k => groups[k]);
     }
 
-    function showToast() {
-      const t = document.getElementById('toast');
-      t.classList.add('show');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+    function showWarn() {
+      const b = document.getElementById('warnBadge');
+      b.classList.add('show');
+      clearTimeout(_warnTimer);
+      _warnTimer = setTimeout(() => b.classList.remove('show'), 3000);
     }
 
     function playFile(name, isRecording) {
-      if (isRecording) { showToast(); return; }
+      if (isRecording) { showWarn(); return; }
 
       _activeFile = name;
       const player = document.getElementById('player');
@@ -179,9 +169,7 @@
           player.pause();
           player.src = '';
           wrap.classList.add('hidden');
-          document.getElementById('toastMsg').textContent =
-            'File ini masih dalam proses perekaman. Tunggu hingga segment selesai.';
-          showToast();
+          showWarn();
           _activeFile = null;
           document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
         }
@@ -196,7 +184,7 @@
     }
 
     async function deleteFile(name, isRecording) {
-      if (isRecording) { showToast(); return; }
+      if (isRecording) { showWarn(); return; }
       if (!confirm(`Hapus ${name}?`)) return;
       const resp = await fetch('/recordings/delete/' + encodeURIComponent(name), { method: 'DELETE' });
       if (resp.ok) {
@@ -260,7 +248,7 @@
               </div>
               <div class="file-actions" onclick="event.stopPropagation()">
                 ${rec
-                  ? `<button class="btn-icon btn-play" onclick="showToast()" style="opacity:.4;cursor:not-allowed">
+                  ? `<button class="btn-icon btn-play" onclick="showWarn()" style="opacity:.4;cursor:not-allowed">
                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                          <polygon points="5 3 19 12 5 21 5 3"/>
                        </svg>
