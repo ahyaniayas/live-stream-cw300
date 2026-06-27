@@ -56,3 +56,7 @@ docker-compose.override.yml
 
 # AI / Knowledge graph
 graphify-out/
+
+# Rekaman CCTV
+recordings/**/*.mp4
+recordings/**/*.ts

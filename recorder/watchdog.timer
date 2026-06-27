@@ -1,0 +1,9 @@
+[Unit]
+Description=Jalankan CCTV watchdog tiap 5 menit
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

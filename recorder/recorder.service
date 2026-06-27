@@ -1,0 +1,13 @@
+[Unit]
+Description=CCTV Recorder SD + 2K
+After=network.target
+
+[Service]
+Type=simple
+User=serverku
+ExecStart=/bin/bash /home/serverku/live-stream-cw300/recorder/recorder.sh
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
