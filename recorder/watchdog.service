@@ -3,7 +3,7 @@ Description=CCTV Recording Watchdog (hapus rekaman terlama jika melebihi batas)
 
 [Service]
 Type=oneshot
-User=serverku
+User=root
 Environment=RECORD_DIR=/home/serverku/live-stream-cw300/recordings
 Environment=RECORD_MAX_GB=16
 ExecStart=/usr/bin/python3 /home/serverku/live-stream-cw300/recorder/watchdog.py

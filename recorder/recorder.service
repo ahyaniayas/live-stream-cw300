@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=serverku
+User=root
 ExecStart=/bin/bash /home/serverku/live-stream-cw300/recorder/recorder.sh
 Restart=always
 RestartSec=5s
