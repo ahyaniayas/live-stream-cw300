@@ -60,7 +60,9 @@ ExecStart=/bin/bash /home/serverku/live-stream-cw300/recorder/recorder.sh
 
 ```bash
 # 1. Edit konfigurasi di recorder.sh, watchdog.service, recorder.service
-# 2. Jalankan install (hanya sekali)
+# 2. Beri permission executable (lakukan sekali setelah git pull)
+chmod +x recorder/recorder.sh recorder/install.sh
+# 3. Jalankan install (hanya sekali)
 sudo bash recorder/install.sh
 ```
 
