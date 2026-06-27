@@ -1,5 +1,4 @@
-import os
-import subprocess
+import time
 from pathlib import Path
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request, send_file
@@ -10,10 +9,14 @@ bp = Blueprint("recorder", __name__)
 
 _RECORD_PATH = Path(RECORD_DIR) / "2k"
 
+# File dianggap masih direkam jika mtime < N detik yang lalu
+_RECORDING_THRESHOLD = 30
+
 
 def _list_files():
     if not _RECORD_PATH.exists():
         return []
+    now = time.time()
     files = sorted(_RECORD_PATH.glob("*.mp4"), key=lambda f: f.stat().st_mtime, reverse=True)
     result = []
     for f in files:
@@ -22,6 +25,7 @@ def _list_files():
             "name": f.name,
             "size": stat.st_size,
             "mtime": stat.st_mtime,
+            "recording": (now - stat.st_mtime) < _RECORDING_THRESHOLD,
         })
     return result
 
@@ -83,41 +87,6 @@ def recordings_video(filename):
     if not path.exists() or path.suffix.lower() != ".mp4":
         abort(404)
     return _serve_range(path)
-
-
-@bp.route("/recordings/stream/<filename>")
-def recordings_stream(filename):
-    """Transcode HEVC → H.264 on-the-fly sehingga bisa diputar di semua browser."""
-    path = _RECORD_PATH / filename
-    if not path.exists() or path.suffix.lower() != ".mp4":
-        abort(404)
-
-    cmd = [
-        "ffmpeg", "-i", str(path),
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-        "-c:a", "aac",
-        "-f", "mp4",
-        "-movflags", "frag_keyframe+empty_moov",
-        "pipe:1",
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-
-    def _generate():
-        try:
-            while True:
-                chunk = proc.stdout.read(65536)
-                if not chunk:
-                    break
-                yield chunk
-        finally:
-            proc.kill()
-            proc.wait()
-
-    return Response(
-        _generate(),
-        mimetype="video/mp4",
-        headers={"X-Accel-Buffering": "no"},
-    )
 
 
 @bp.route("/recordings/delete/<filename>", methods=["DELETE"])

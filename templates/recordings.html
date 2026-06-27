@@ -44,28 +44,44 @@
     .file-item:last-child { border-bottom:none; }
     .file-item:hover { background:rgba(255,255,255,.04); }
     .file-item.active { background:rgba(255,105,0,.12); }
+    .file-item.recording { cursor:default; }
     .file-icon { width:36px; height:36px; background:var(--panel2); border-radius:8px;
                  display:flex; align-items:center; justify-content:center;
                  flex-shrink:0; color:var(--accent); }
+    .file-icon.rec-icon { color:var(--red); }
     .file-item.active .file-icon { background:rgba(255,105,0,.2); }
     .file-meta { flex:1; min-width:0; }
-    .file-time { font-size:14px; font-weight:500; }
+    .file-time { font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; }
     .file-size { font-size:12px; color:var(--muted); margin-top:2px; }
+    .badge-rec { display:inline-flex; align-items:center; gap:4px;
+                 background:rgba(239,68,68,.15); color:var(--red);
+                 border-radius:5px; padding:2px 7px; font-size:11px; font-weight:600; }
+    .dot-blink { width:6px; height:6px; background:var(--red); border-radius:50%;
+                 animation:blink 1.2s ease-in-out infinite; flex-shrink:0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
     .file-actions { display:flex; gap:6px; flex-shrink:0; }
     .btn-icon { background:var(--panel2); border:none; border-radius:8px;
                 padding:7px 12px; font-size:12px; font-weight:600; color:var(--txt);
                 cursor:pointer; display:flex; align-items:center; gap:5px;
-                transition:background .15s; white-space:nowrap; }
+                transition:background .15s; white-space:nowrap; text-decoration:none; }
     .btn-icon:hover { background:rgba(255,255,255,.1); }
     .btn-play { color:var(--accent); }
     .btn-del { color:var(--red); }
     .btn-del:hover { background:rgba(239,68,68,.15); }
 
+    /* Warning toast */
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+             background:#1e1e2e; border:1px solid rgba(239,68,68,.4);
+             color:var(--txt); border-radius:12px; padding:14px 20px;
+             display:flex; align-items:center; gap:10px; font-size:13px;
+             box-shadow:0 8px 24px rgba(0,0,0,.5); transition:transform .3s ease;
+             z-index:100; max-width:360px; }
+    #toast.show { transform:translateX(-50%) translateY(0); }
+    #toast svg { flex-shrink:0; color:var(--red); }
+
     /* Loading skeleton */
     .skel { background:var(--panel2); border-radius:8px; animation:shimmer 1.5s infinite; }
-    @keyframes shimmer {
-      0%,100% { opacity:.5 } 50% { opacity:1 }
-    }
+    @keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
   </style>
 </head>
 <body>
@@ -90,15 +106,24 @@
     </div>
 
     <!-- File List -->
-    <div class="file-list" id="fileList">
-      <!-- populated by JS -->
-    </div>
+    <div class="file-list" id="fileList"></div>
 
+  </div>
+
+  <!-- Toast peringatan -->
+  <div id="toast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span>Rekaman ini masih berlangsung. Tunggu hingga segment selesai sebelum memutar.</span>
   </div>
 
   <script>
     let _files = [];
     let _activeFile = null;
+    let _toastTimer = null;
 
     function fmtSize(bytes) {
       if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -107,7 +132,6 @@
     }
 
     function parseFilename(name) {
-      // 20260627_214124.mp4 → {date: '2026-06-27', time: '21:41:24', label: '27 Jun 2026', dayKey: '2026-06-27'}
       const m = name.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
       if (!m) return { dayKey: name, label: name, time: name };
       const [, Y, Mo, D, h, mi, s] = m;
@@ -130,28 +154,36 @@
       return order.map(k => groups[k]);
     }
 
-    function playFile(name) {
+    function showToast() {
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+    }
+
+    function playFile(name, isRecording) {
+      if (isRecording) { showToast(); return; }
+
       _activeFile = name;
       const player = document.getElementById('player');
       const wrap   = document.getElementById('playerWrap');
       const info   = document.getElementById('playerInfo');
       const p      = parseFilename(name);
 
-      player.src = '/recordings/stream/' + encodeURIComponent(name);
+      player.src = '/recordings/video/' + encodeURIComponent(name);
       wrap.classList.remove('hidden');
       info.textContent = p.label + ', ' + p.time;
       player.play().catch(() => {});
 
-      // scroll player into view
       wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      // refresh active highlight
       document.querySelectorAll('.file-item').forEach(el => {
         el.classList.toggle('active', el.dataset.name === name);
       });
     }
 
-    async function deleteFile(name) {
+    async function deleteFile(name, isRecording) {
+      if (isRecording) { showToast(); return; }
       if (!confirm(`Hapus ${name}?`)) return;
       const resp = await fetch('/recordings/delete/' + encodeURIComponent(name), { method: 'DELETE' });
       if (resp.ok) {
@@ -166,7 +198,7 @@
     }
 
     function render(files) {
-      const list = document.getElementById('fileList');
+      const list  = document.getElementById('fileList');
       const stats = document.getElementById('statsText');
 
       if (!files.length) {
@@ -189,27 +221,45 @@
       list.innerHTML = groups.map(g => `
         <div class="day-group">
           <div class="day-label">${g.label}</div>
-          ${g.files.map(f => `
-            <div class="file-item ${_activeFile === f.name ? 'active' : ''}"
-                 data-name="${f.name}" onclick="playFile('${f.name}')">
-              <div class="file-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polygon points="10 8 16 12 10 16 10 8"/>
-                </svg>
+          ${g.files.map(f => {
+            const rec = !!f.recording;
+            return `
+            <div class="file-item ${_activeFile === f.name ? 'active' : ''} ${rec ? 'recording' : ''}"
+                 data-name="${f.name}" onclick="playFile('${f.name}', ${rec})">
+              <div class="file-icon ${rec ? 'rec-icon' : ''}">
+                ${rec
+                  ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                       <circle cx="12" cy="12" r="8"/>
+                     </svg>`
+                  : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                       <circle cx="12" cy="12" r="10"/>
+                       <polygon points="10 8 16 12 10 16 10 8"/>
+                     </svg>`
+                }
               </div>
               <div class="file-meta">
-                <div class="file-time">${f.time}</div>
+                <div class="file-time">
+                  ${f.time}
+                  ${rec ? `<span class="badge-rec"><span class="dot-blink"></span>Sedang direkam</span>` : ''}
+                </div>
                 <div class="file-size">${fmtSize(f.size)}</div>
               </div>
               <div class="file-actions" onclick="event.stopPropagation()">
-                <button class="btn-icon btn-play" onclick="playFile('${f.name}')">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                  </svg>
-                  Putar
-                </button>
+                ${rec
+                  ? `<button class="btn-icon btn-play" onclick="showToast()" style="opacity:.4;cursor:not-allowed">
+                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                         <polygon points="5 3 19 12 5 21 5 3"/>
+                       </svg>
+                       Putar
+                     </button>`
+                  : `<button class="btn-icon btn-play" onclick="playFile('${f.name}', false)">
+                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                         <polygon points="5 3 19 12 5 21 5 3"/>
+                       </svg>
+                       Putar
+                     </button>`
+                }
                 <a class="btn-icon" href="/recordings/video/${encodeURIComponent(f.name)}" download="${f.name}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -219,7 +269,7 @@
                   </svg>
                   Unduh
                 </a>
-                <button class="btn-icon btn-del" onclick="deleteFile('${f.name}')">
+                <button class="btn-icon btn-del" onclick="deleteFile('${f.name}', ${rec})">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
@@ -228,8 +278,8 @@
                   </svg>
                 </button>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
       `).join('');
     }
@@ -250,6 +300,8 @@
     }
 
     load();
+    // refresh list tiap 30 detik agar status "sedang direkam" terupdate
+    setInterval(load, 30000);
   </script>
 </body>
 </html>
