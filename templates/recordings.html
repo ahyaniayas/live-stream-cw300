@@ -164,16 +164,6 @@
       wrap.classList.remove('hidden');
       info.textContent = p.label + ', ' + p.time;
 
-      player.onloadedmetadata = () => {
-        if (player.duration > 86400) {
-          player.pause();
-          player.src = '';
-          wrap.classList.add('hidden');
-          showWarn();
-          _activeFile = null;
-          document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
-        }
-      };
       player.play().catch(() => {});
 
       wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
