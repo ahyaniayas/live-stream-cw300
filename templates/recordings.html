@@ -68,6 +68,8 @@
     .btn-play { color:var(--accent); }
     .btn-del { color:var(--red); }
     .btn-del:hover { background:rgba(239,68,68,.15); }
+    .btn-label { display:none; }
+    @media (min-width:480px) { .btn-label { display:inline; } }
 
     /* Warning badge */
     #warnBadge { display:none; align-items:center; gap:4px;
@@ -245,13 +247,13 @@
                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                          <polygon points="5 3 19 12 5 21 5 3"/>
                        </svg>
-                       Putar
+                       <span class="btn-label">Putar</span>
                      </button>`
                   : `<button class="btn-icon btn-play" onclick="playFile('${f.name}', false)">
                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                          <polygon points="5 3 19 12 5 21 5 3"/>
                        </svg>
-                       Putar
+                       <span class="btn-label">Putar</span>
                      </button>`
                 }
                 <a class="btn-icon" href="/recordings/video/${encodeURIComponent(f.name)}" download="${f.name}">
@@ -261,7 +263,7 @@
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                  Unduh
+                  <span class="btn-label">Unduh</span>
                 </a>
                 <button class="btn-icon btn-del" onclick="deleteFile('${f.name}', ${rec})">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
