@@ -220,7 +220,7 @@ def _encode_loop():
             now = time.monotonic()
             if now - fps_t >= 1.0:
                 state._stream_fps = round(fps_count / (now - fps_t))
-                log(f"Stream FPS: {state._stream_fps}")
+                # log(f"Stream FPS: {state._stream_fps}")
                 fps_count = 0
                 fps_t     = now
 
