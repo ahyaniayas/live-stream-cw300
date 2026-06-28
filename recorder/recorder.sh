@@ -4,7 +4,7 @@
 # Edit variabel di bawah sesuai server kamu.
 
 RECORD_DIR="/home/serverku/live-stream-cw300/recordings"
-SEGMENT_SEC=900   # 15 menit
+SEGMENT_SEC=300   # 5 menit
 RTSP_2K="rtsp://localhost:8554/cctv_sub3"
 
 mkdir -p "$RECORD_DIR/2k"
