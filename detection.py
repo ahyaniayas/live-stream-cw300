@@ -156,7 +156,7 @@ class Detector:
                     state._last_dets.extend(dets)
 
                 zone_mod.update_zones(person_positions, h, w, frame)
-                log(f"Deteksi: {[d['label'] for d in dets]}")
+                # log(f"Deteksi: {[d['label'] for d in dets]}")
 
             except Exception as exc:
                 log(f"Detector error: {exc}")
