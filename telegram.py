@@ -205,6 +205,22 @@ def _collect_photos(first_frame, count=5, interval=1.0):
     return photos
 
 
+def _collect_video_frames():
+    """Kumpulkan frame video selama NOTIF_VIDEO_DURATION detik sejak objek terdeteksi."""
+    n        = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
+    interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
+    frames   = []
+    for _ in range(n):
+        t = time.monotonic()
+        f = state._grabber.read() if state._grabber else None
+        if f is not None:
+            frames.append(f)
+        wait = interval - (time.monotonic() - t)
+        if wait > 0:
+            time.sleep(wait)
+    return frames
+
+
 def _worker():
     while True:
         item = state._notif_queue.get()
@@ -219,12 +235,10 @@ def _worker():
             do_video = state._notif_settings.get("send_video", False)
 
         if do_photo and do_video:
-            # 1 foto (saat deteksi) + video klip dari buffer → 1 pesan
+            # 1 foto (saat deteksi) + video 10 detik setelah deteksi → 1 pesan
             photos = [frame] if frame is not None else []
-            n = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
-            with state._frame_buffer_lock:
-                clip = list(state._frame_buffer)[-n:]
-            log(f"Notif foto+video: {len(photos)} foto, {len(clip)} frame buffer")
+            clip   = _collect_video_frames()
+            log(f"Notif foto+video: {len(photos)} foto, {len(clip)} frame")
             send_media_group(caption, photos, clip)
 
         elif do_photo:
@@ -233,10 +247,8 @@ def _worker():
             send_media_group(caption, photos)
 
         elif do_video:
-            # Hanya video klip
-            n = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
-            with state._frame_buffer_lock:
-                clip = list(state._frame_buffer)[-n:]
+            # Video 10 detik setelah deteksi
+            clip = _collect_video_frames()
             video_bytes = _encode_video_bytes(clip)
             if video_bytes:
                 reload_dotenv()
