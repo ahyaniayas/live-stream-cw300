@@ -72,8 +72,11 @@
     /* Warning badge */
     #warnBadge { display:none; align-items:center; gap:4px;
                  background:rgba(239,68,68,.15); color:var(--red);
-                 border-radius:6px; padding:3px 9px; font-size:12px; font-weight:600; }
+                 border-radius:6px; padding:3px 9px; font-size:12px; font-weight:600;
+                 white-space:nowrap; flex-shrink:0; }
     #warnBadge.show { display:inline-flex; }
+    #warnBadge .warn-label { display:none; }
+    @media (min-width:480px) { #warnBadge .warn-label { display:inline; } }
 
     /* Loading skeleton */
     .skel { background:var(--panel2); border-radius:8px; animation:shimmer 1.5s infinite; }
@@ -93,7 +96,7 @@
       </a>
       <h1>Rekaman CCTV</h1>
       <span id="warnBadge">
-        <span class="dot-blink"></span>Sedang direkam
+        <span class="dot-blink"></span><span class="warn-label">Sedang direkam</span>
       </span>
       <span class="rec-stats" id="statsText">Memuat…</span>
     </div>
