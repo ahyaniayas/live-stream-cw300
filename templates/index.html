@@ -66,6 +66,17 @@
     <span class="badge" id="fpsBadge">–</span>
   </div>
 
+  <!-- Action Confirm Modal -->
+  <div id="actionBackdrop">
+    <div id="actionModal" onclick="event.stopPropagation()">
+      <p id="actionMsg"></p>
+      <div class="action-btns">
+        <button id="actionConfirmBtn" class="btn btn-accent"></button>
+        <button class="btn btn-ghost" onclick="closeActionModal()">Biarkan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div id="settingsBackdrop" onclick="closeSettings()">
     <div id="settingsModal" onclick="event.stopPropagation()">

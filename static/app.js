@@ -380,10 +380,24 @@ function _applyZoneNotifyUI(id, on) {
   if (chk)  chk.checked = on;
 }
 
+function showActionModal(message, actionLabel, onAction) {
+  document.getElementById('actionMsg').textContent = message;
+  document.getElementById('actionConfirmBtn').textContent = actionLabel;
+  document.getElementById('actionConfirmBtn').onclick = () => { closeActionModal(); onAction(); };
+  document.getElementById('actionBackdrop').classList.add('open');
+}
+function closeActionModal() {
+  document.getElementById('actionBackdrop').classList.remove('open');
+}
+
 async function toggleZoneNotify(id) {
   if (pendingNotify.has(id)) return;
   const z = zonesData.find(z => z.id === id);
   if (!z) return;
+
+  const turningOn = !z.notify;
+  const wasAllOff = zonesData.every(x => !x.notify);
+
   pendingNotify.add(id);
   z.notify = !z.notify;
   _applyZoneNotifyUI(id, z.notify);
@@ -396,6 +410,28 @@ async function toggleZoneNotify(id) {
   } finally {
     pendingNotify.delete(id);
     _applyZoneNotifyUI(id, z.notify);
+  }
+
+  const nowAllOff = zonesData.every(x => !x.notify);
+
+  if (!turningOn && nowAllOff) {
+    showActionModal(
+      'Semua notifikasi zona dimatikan.\nMatikan deteksi untuk hemat daya?',
+      'Matikan Deteksi',
+      async () => {
+        const s = await fetch('/status').then(r => r.json()).catch(() => ({}));
+        if (s.enabled) toggleDetect();
+      }
+    );
+  } else if (turningOn && wasAllOff && z.notify) {
+    showActionModal(
+      'Notifikasi zona aktif kembali.\nAktifkan juga fitur deteksi?',
+      'Aktifkan Deteksi',
+      async () => {
+        const s = await fetch('/status').then(r => r.json()).catch(() => ({}));
+        if (!s.enabled) toggleDetect();
+      }
+    );
   }
 }
 

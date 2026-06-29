@@ -74,6 +74,22 @@ button.btn:hover { opacity:.82; }
 .badge { background:var(--panel); border-radius:8px; padding:4px 10px;
          font-size:13px; color:var(--muted); margin-left:auto; }
 
+/* Action confirm modal */
+#actionBackdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+                  z-index:300; align-items:center; justify-content:center; }
+#actionBackdrop.open { display:flex; }
+#actionModal { background:var(--panel); border-radius:16px; width:300px; max-width:90vw;
+               padding:24px 20px 20px; display:flex; flex-direction:column; gap:20px;
+               box-shadow:0 20px 60px rgba(0,0,0,.5); animation:modalIn .18s ease; }
+#actionMsg { font-size:14px; line-height:1.6; color:var(--txt); white-space:pre-line; }
+.action-btns { display:flex; gap:8px; }
+.action-btns .btn { flex:1; padding:10px; font-size:13px; font-weight:600;
+                    border:none; border-radius:10px; cursor:pointer; }
+.btn-accent { background:var(--accent); color:#fff; }
+.btn-accent:hover { opacity:.85; }
+.btn-ghost { background:var(--panel2); color:var(--txt); }
+.btn-ghost:hover { background:rgba(255,255,255,.1); }
+
 /* Settings modal */
 #settingsBackdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
                     z-index:200; align-items:center; justify-content:center; }
