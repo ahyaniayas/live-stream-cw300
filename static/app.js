@@ -414,23 +414,19 @@ async function toggleZoneNotify(id) {
 
   const nowAllOff = zonesData.every(x => !x.notify);
 
-  if (!turningOn && nowAllOff) {
+  const s = await fetch('/status').then(r => r.json()).catch(() => ({}));
+
+  if (!turningOn && nowAllOff && s.enabled) {
     showActionModal(
       'Semua notifikasi zona dimatikan.\nMatikan deteksi untuk hemat daya?',
       'Matikan Deteksi',
-      async () => {
-        const s = await fetch('/status').then(r => r.json()).catch(() => ({}));
-        if (s.enabled) toggleDetect();
-      }
+      () => toggleDetect()
     );
-  } else if (turningOn && wasAllOff && z.notify) {
+  } else if (turningOn && wasAllOff && z.notify && !s.enabled) {
     showActionModal(
       'Notifikasi zona aktif kembali.\nAktifkan juga fitur deteksi?',
       'Aktifkan Deteksi',
-      async () => {
-        const s = await fetch('/status').then(r => r.json()).catch(() => ({}));
-        if (!s.enabled) toggleDetect();
-      }
+      () => toggleDetect()
     );
   }
 }
