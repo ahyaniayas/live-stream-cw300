@@ -8,7 +8,8 @@ import numpy as np
 
 import state
 from config import (
-    STREAM_URL, DETECT_CONF, DETECT_MAX_FPS, STREAM_MAX_FPS,
+    STREAM_URL, DETECT_CONF, DETECT_MAX_FPS, DETECT_IMGSZ,
+    STREAM_MAX_FPS, STREAM_WIDTH,
     YOLO_MODEL, GATE_TARGET_LABELS, label_category, log,
     NOTIF_VIDEO_FPS, NOTIF_VIDEO_DURATION,
 )
@@ -107,7 +108,7 @@ class Detector:
                     time.sleep(0.05)
                     continue
 
-                results = get_model()(frame, conf=DETECT_CONF, verbose=False, half=True)
+                results = get_model()(frame, conf=DETECT_CONF, verbose=False, half=True, imgsz=DETECT_IMGSZ)
                 h, w    = frame.shape[:2]
 
                 dets             = []
@@ -211,7 +212,12 @@ def _encode_loop():
 
             out = zone_mod.draw_zones(out)
 
-            ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            if STREAM_WIDTH > 0 and out.shape[1] > STREAM_WIDTH:
+                scale = STREAM_WIDTH / out.shape[1]
+                out = cv2.resize(out, (STREAM_WIDTH, int(out.shape[0] * scale)),
+                                 interpolation=cv2.INTER_AREA)
+
+            ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 75])
             if ok:
                 with state._last_jpeg_lock:
                     state._last_jpeg = buf.tobytes()

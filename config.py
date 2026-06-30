@@ -47,7 +47,9 @@ APP_PORT       = _int  ("APP_PORT",           3001)
 STREAM_URL     = _str  ("STREAM_URL",         "rtsp://localhost:8554/cctv")
 DETECT_CONF    = _float("DETECT_CONF",        0.35)
 DETECT_MAX_FPS = _int  ("DETECT_MAX_FPS",     5)
-STREAM_MAX_FPS = _int  ("STREAM_MAX_FPS",     25)
+DETECT_IMGSZ   = _int  ("DETECT_IMGSZ",       640)   # resolusi inference YOLO (bukan sumber)
+STREAM_MAX_FPS = _int  ("STREAM_MAX_FPS",     15)
+STREAM_WIDTH   = _int  ("STREAM_WIDTH",       1280)  # lebar MJPEG ke browser (0 = asli)
 
 # Path model dibangun dari BASE_DIR/models/<nama file>
 YOLO_MODEL     = os.path.join(BASE_DIR, "models",
