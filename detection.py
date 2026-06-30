@@ -108,7 +108,10 @@ class Detector:
                     time.sleep(0.05)
                     continue
 
-                results = get_model()(frame, conf=DETECT_CONF, verbose=False, half=True, imgsz=DETECT_IMGSZ)
+                kwargs = {"conf": DETECT_CONF, "verbose": False, "half": True}
+                if DETECT_IMGSZ > 0:
+                    kwargs["imgsz"] = DETECT_IMGSZ
+                results = get_model()(frame, **kwargs)
                 h, w    = frame.shape[:2]
 
                 dets             = []
