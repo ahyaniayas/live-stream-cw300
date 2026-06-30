@@ -432,6 +432,12 @@ async function toggleZoneNotify(id) {
 }
 
 // ── Toggle controls ───────────────────────────────────────────────────────────
+async function toggleStream() {
+  const r = await fetch('/stream/toggle', { method:'POST' });
+  const d = await r.json();
+  document.getElementById('streamToggle').checked = d.stream_on;
+}
+
 async function toggleDetect() {
   const r = await fetch('/detect/toggle', { method:'POST' });
   const d = await r.json();
@@ -469,6 +475,8 @@ async function pollStatus() {
     const r = await fetch('/status', { signal: AbortSignal.timeout(2000) });
     const d = await r.json();
     if (serverDown) { serverDown=false; reloadFeed(); }
+    if (d.stream_on != null)
+      document.getElementById('streamToggle').checked = d.stream_on;
     document.getElementById('detectToggle').checked    = d.enabled;
     document.getElementById('showBoxesToggle').checked = d.show_boxes;
     document.getElementById('showNamesToggle').checked = d.show_names;

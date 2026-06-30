@@ -41,6 +41,7 @@ def init_db():
         # Seed default — hanya jika key belum ada (INSERT OR IGNORE)
         defaults = {
             # Deteksi
+            "stream_on":        "true",
             "detect_on":        "true",
             "show_boxes":       "true",
             "show_names":       "true",
@@ -150,6 +151,7 @@ def set_setting(key, value):
 
 def load_app_settings():
     return {
+        "stream_on":  _bool_val("stream_on",  "true"),
         "detect_on":  _bool_val("detect_on",  "true"),
         "show_boxes": _bool_val("show_boxes",  "true"),
         "show_names": _bool_val("show_names",  "true"),

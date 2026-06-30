@@ -34,10 +34,28 @@ class FrameGrabber:
             pass
 
         while self.running:
+            with state._stream_lock:
+                stream_on = state._stream_on
+            if not stream_on:
+                with self.lock:
+                    self.frame     = None
+                    self.connected = False
+                time.sleep(0.5)
+                continue
+
             log(f"Membuka RTSP: {self.url}")
             cap = cv2.VideoCapture(self.url)
             _logged = False
             while self.running:
+                with state._stream_lock:
+                    stream_on = state._stream_on
+                if not stream_on:
+                    log("RTSP dimatikan, memutus koneksi...")
+                    with self.lock:
+                        self.frame     = None
+                        self.connected = False
+                    break
+
                 ok, frame = cap.read()
                 if not ok:
                     log("Frame gagal dibaca, reconnect...")
@@ -56,7 +74,10 @@ class FrameGrabber:
                     self.frame     = frame
                     self.connected = True
             cap.release()
-            time.sleep(1.0)
+            with state._stream_lock:
+                stream_on = state._stream_on
+            if stream_on:
+                time.sleep(1.0)
 
     def read(self):
         with self.lock:

@@ -3,6 +3,10 @@ import collections
 import queue
 import threading
 
+# Stream RTSP
+_stream_on   = True
+_stream_lock = threading.Lock()
+
 # Deteksi
 _detect_on        = True
 _detect_lock      = threading.Lock()

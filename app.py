@@ -29,6 +29,7 @@ state._notif_settings.update(database.load_notif_settings())
 state._notif_history = database.load_notif_history(limit=NOTIF_HISTORY_DISPLAY)
 
 _app = database.load_app_settings()
+state._stream_on   = _app["stream_on"]
 state._detect_on   = _app["detect_on"]
 state._show_boxes  = _app["show_boxes"]
 state._show_names  = _app["show_names"]

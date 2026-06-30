@@ -59,9 +59,12 @@ def status():
     cooldown = max(0, int(cooldown))
 
     connected = state._grabber.connected if state._grabber is not None else False
+    with state._stream_lock:
+        stream_on = state._stream_on
     return jsonify(
         enabled=on, detections=dets, counts=counts, fps=state._stream_fps,
-        stream_connected=connected, show_boxes=show_boxes, show_names=show_names,
+        stream_on=stream_on, stream_connected=connected,
+        show_boxes=show_boxes, show_names=show_names,
         categories=categories,
         notif_interval=notif_interval,
         notif_always_on=notif_always_on,
@@ -73,6 +76,15 @@ def status():
         notif_send_video=notif_send_video,
         notif_history=notif_history,
     )
+
+
+@bp.route("/stream/toggle", methods=["POST"])
+def stream_toggle():
+    with state._stream_lock:
+        state._stream_on = not state._stream_on
+        s = state._stream_on
+    database.set_setting("stream_on", "true" if s else "false")
+    return jsonify(stream_on=s)
 
 
 @bp.route("/detect/toggle", methods=["POST"])
