@@ -31,52 +31,10 @@ def _list_files():
 
 
 def _serve_range(path: Path):
-    file_size = path.stat().st_size
-    range_header = request.headers.get("Range")
-
-    if range_header and range_header.startswith("bytes="):
-        parts = range_header[6:].split("-")
-        if not parts[0]:  # Suffix-byte-range-spec (e.g., bytes=-500)
-            suffix_len = int(parts[1])
-            byte_start = max(0, file_size - suffix_len)
-            byte_end = file_size - 1
-        else:
-            byte_start = int(parts[0])
-            byte_end = int(parts[1]) if len(parts) > 1 and parts[1] else file_size - 1
-            
-        byte_end = min(byte_end, file_size - 1)
-        
-        if byte_start > byte_end or byte_start >= file_size:
-            return Response(status=416, headers={"Content-Range": f"bytes */{file_size}"})
-
-        length = byte_end - byte_start + 1
-
-        def _generate():
-            with open(path, "rb") as fh:
-                fh.seek(byte_start)
-                remaining = length
-                while remaining > 0:
-                    chunk = fh.read(min(65536, remaining))
-                    if not chunk:
-                        break
-                    remaining -= len(chunk)
-                    yield chunk
-
-        return Response(
-            _generate(),
-            status=206,
-            mimetype="video/mp4",
-            headers={
-                "Content-Range": f"bytes {byte_start}-{byte_end}/{file_size}",
-                "Content-Length": str(length),
-                "Accept-Ranges": "bytes",
-            },
-        )
-
-    resp = send_file(path, mimetype="video/mp4")
-    resp.headers["Accept-Ranges"] = "bytes"
-    resp.headers["Content-Length"] = str(file_size)
-    return resp
+    # Gunakan fitur bawaan Flask (Werkzeug) untuk menangani HTTP Range Request.
+    # Flask secara otomatis akan menangani byte-range (termasuk suffix bytes, If-Range, dll)
+    # yang sangat dibutuhkan oleh Firefox untuk memparsing durasi video dengan benar.
+    return send_file(path, mimetype="video/mp4", conditional=True)
 
 
 @bp.route("/recordings")
