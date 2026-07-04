@@ -36,9 +36,19 @@ def _serve_range(path: Path):
 
     if range_header and range_header.startswith("bytes="):
         parts = range_header[6:].split("-")
-        byte_start = int(parts[0]) if parts[0] else 0
-        byte_end = int(parts[1]) if len(parts) > 1 and parts[1] else file_size - 1
+        if not parts[0]:  # Suffix-byte-range-spec (e.g., bytes=-500)
+            suffix_len = int(parts[1])
+            byte_start = max(0, file_size - suffix_len)
+            byte_end = file_size - 1
+        else:
+            byte_start = int(parts[0])
+            byte_end = int(parts[1]) if len(parts) > 1 and parts[1] else file_size - 1
+            
         byte_end = min(byte_end, file_size - 1)
+        
+        if byte_start > byte_end or byte_start >= file_size:
+            return Response(status=416, headers={"Content-Range": f"bytes */{file_size}"})
+
         length = byte_end - byte_start + 1
 
         def _generate():
