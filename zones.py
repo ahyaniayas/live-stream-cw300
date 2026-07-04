@@ -38,10 +38,11 @@ def update_zones(person_positions, frame_h, frame_w, frame=None):
                 [[int(p[0] * frame_w), int(p[1] * frame_h)] for p in z["points"]],
                 dtype=np.int32,
             )
-            in_zone = sum(
-                1 for (x1, y1, x2, y2) in person_positions
+            zone_boxes = [
+                (x1, y1, x2, y2) for (x1, y1, x2, y2) in person_positions
                 if bbox_intersects_zone(pts, x1, y1, x2, y2)
-            )
+            ]
+            in_zone = len(zone_boxes)
             z["current_count"] = in_zone
 
             if in_zone > 0:
@@ -61,7 +62,7 @@ def update_zones(person_positions, frame_h, frame_w, frame=None):
                         f"cooldown_sisa={max(0, sisa):.0f}s")
                     if cfg and win and sisa <= 0:
                         z["last_notif"] = now
-                        to_notify.append((z["name"], in_zone))
+                        to_notify.append((z["name"], in_zone, zone_boxes))
             else:
                 if z["active"] and now - z["last_seen"] >= GATE_DEACTIVATE_SEC:
                     z["active"] = False
@@ -69,10 +70,10 @@ def update_zones(person_positions, frame_h, frame_w, frame=None):
     for zid, count in to_persist:
         database.upsert_zone_count(zid, count)
 
-    for zname, count in to_notify:
+    for zname, count, zone_boxes in to_notify:
         try:
             state._notif_queue.put_nowait(
-                (zname, count, frame.copy() if frame is not None else None)
+                (zname, count, frame.copy() if frame is not None else None, zone_boxes)
             )
         except queue.Full:
             log("Notif queue penuh, lewati")

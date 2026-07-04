@@ -221,12 +221,23 @@ def _collect_video_frames():
     return frames
 
 
+def _draw_detections(frame, boxes):
+    """Gambar kotak merah pada tiap posisi orang yang memicu notifikasi."""
+    if frame is None or not boxes:
+        return frame
+    marked = frame.copy()
+    for (x1, y1, x2, y2) in boxes:
+        cv2.rectangle(marked, (x1, y1), (x2, y2), (0, 0, 255), 2)
+    return marked
+
+
 def _worker():
     while True:
         item = state._notif_queue.get()
         if item is None:
             break
-        zone_name, count, frame = item
+        zone_name, count, frame, boxes = item
+        marked_frame = _draw_detections(frame, boxes)
         dt      = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         caption = f"🚨 *Orang terdeteksi di {zone_name}*\n👤 {count} orang\n🕐 {dt}"
 
@@ -235,20 +246,22 @@ def _worker():
             do_video = state._notif_settings.get("send_video", False)
 
         if do_photo and do_video:
-            # 1 foto (saat deteksi) + video 10 detik setelah deteksi → 1 pesan
-            photos = [frame] if frame is not None else []
+            # 1 foto (saat deteksi, dengan kotak) + video 10 detik setelah deteksi → 1 pesan
+            photos = [marked_frame] if marked_frame is not None else []
             clip   = _collect_video_frames()
             log(f"Notif foto+video: {len(photos)} foto, {len(clip)} frame")
             send_media_group(caption, photos, clip)
 
         elif do_photo:
-            # Kumpulkan 5 foto (1/detik selama 5 detik) → 1 pesan
-            photos = _collect_photos(frame, count=5, interval=1.0)
+            # Kumpulkan 5 foto (1/detik selama 5 detik) → 1 pesan, foto pertama dengan kotak
+            photos = _collect_photos(marked_frame, count=5, interval=1.0)
             send_media_group(caption, photos)
 
         elif do_video:
-            # Video 10 detik setelah deteksi
+            # Video 10 detik setelah deteksi, frame pertama diberi kotak deteksi
             clip = _collect_video_frames()
+            if marked_frame is not None:
+                clip.insert(0, marked_frame)
             video_bytes = _encode_video_bytes(clip)
             if video_bytes:
                 reload_dotenv()
