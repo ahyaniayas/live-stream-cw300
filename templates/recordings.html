@@ -185,7 +185,7 @@
       const info   = document.getElementById('playerInfo');
       const p      = parseFilename(name);
 
-      player.src = '/recordings/video/' + encodeURIComponent(name);
+      player.src = '/recordings/video/' + encodeURIComponent(name) + '#t=0.001';
       wrap.classList.remove('hidden');
       info.textContent = p.label + ', ' + p.time;
 
