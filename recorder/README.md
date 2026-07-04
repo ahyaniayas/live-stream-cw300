@@ -32,19 +32,25 @@ go2rtc (RTSP) → ffmpeg -c copy → file MP4 (15 menit/segmen)
 
 ## Konfigurasi
 
+`RECORD_DIR` dan `RECORD_MAX_GB` sekarang terpusat di `.env` (root project) — dibaca langsung
+oleh `recorder.sh` dan `watchdog.py`, jadi cukup diedit di satu tempat:
+
+```bash
+# .env
+RECORD_DIR=/home/serverku/live-stream-cw300/recordings
+RECORD_MAX_GB=16
+```
+
 Edit sebelum install:
 
 ### `recorder.sh`
 ```bash
-RECORD_DIR="/home/serverku/live-stream-cw300/recordings"  # folder rekaman (di dalam project)
 SEGMENT_SEC=900                                            # durasi segmen (detik) — 900 = 15 menit
 RTSP_2K="rtsp://localhost:8554/cctv_sub3"
 ```
 
 ### `watchdog.service`
 ```ini
-Environment=RECORD_DIR=/home/serverku/live-stream-cw300/recordings
-Environment=RECORD_MAX_GB=64                               # batas ukuran (GB)
 ExecStart=/usr/bin/python3 /home/serverku/live-stream-cw300/recorder/watchdog.py
 ```
 

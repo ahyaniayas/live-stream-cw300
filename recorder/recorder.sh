@@ -3,7 +3,9 @@
 # Segmen 15 menit, format MP4, stream copy (tanpa re-encode).
 # Edit variabel di bawah sesuai server kamu.
 
-RECORD_DIR="/home/serverku/live-stream-cw300/recordings"
+ENV_FILE="$(dirname "$0")/../.env"
+RECORD_DIR="$(grep -E '^RECORD_DIR=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)"
+RECORD_DIR="${RECORD_DIR:-/home/serverku/live-stream-cw300/recordings}"
 SEGMENT_SEC=300   # 5 menit
 RTSP_2K="rtsp://localhost:8554/cctv_sub3"
 

@@ -7,6 +7,21 @@ import os
 import sys
 from pathlib import Path
 
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
+def _load_dotenv():
+    if not _ENV_PATH.exists():
+        return
+    for line in _ENV_PATH.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ[k.strip()] = v.strip()
+
+
+_load_dotenv()
+
 RECORD_DIR  = Path(os.environ.get("RECORD_DIR",      "/home/serverku/live-stream-cw300/recordings"))
 MAX_BYTES   = int(os.environ.get("RECORD_MAX_GB",    "16")) * 1024 ** 3
 
