@@ -42,10 +42,8 @@ go2rtc/go2rtc
 .AppleDouble
 .LSOverride
 
-# VSCode (keep workspace settings, ignore personal)
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
+# VSCode
+.vscode/
 
 # Logs
 *.log
