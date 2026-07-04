@@ -13,7 +13,7 @@ import cv2
 import state
 import database
 from config import NOTIF_HISTORY_DISPLAY, NOTIF_VIDEO_FPS, NOTIF_VIDEO_DURATION
-from config import reload_dotenv, tg_token, tg_chat, log
+from config import reload_dotenv, tg_token, tg_chat, log, GATE_TARGET_LABELS
 
 
 def is_configured():
@@ -205,22 +205,6 @@ def _collect_photos(first_frame, count=5, interval=1.0):
     return photos
 
 
-def _collect_video_frames():
-    """Kumpulkan frame video selama NOTIF_VIDEO_DURATION detik sejak objek terdeteksi."""
-    n        = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
-    interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
-    frames   = []
-    for _ in range(n):
-        t = time.monotonic()
-        f = state._grabber.read() if state._grabber else None
-        if f is not None:
-            frames.append(f)
-        wait = interval - (time.monotonic() - t)
-        if wait > 0:
-            time.sleep(wait)
-    return frames
-
-
 def _draw_detections(frame, boxes):
     """Gambar kotak merah pada tiap posisi orang yang memicu notifikasi."""
     if frame is None or not boxes:
@@ -229,6 +213,32 @@ def _draw_detections(frame, boxes):
     for (x1, y1, x2, y2) in boxes:
         cv2.rectangle(marked, (x1, y1), (x2, y2), (0, 0, 255), 2)
     return marked
+
+
+def _current_person_boxes():
+    """Ambil posisi orang dari deteksi live terbaru (diisi oleh Detector)."""
+    with state._last_boxes_lock:
+        return [
+            (x1, y1, x2, y2) for (x1, y1, x2, y2, label, conf, in_zone) in state._last_boxes
+            if label in GATE_TARGET_LABELS and in_zone
+        ]
+
+
+def _collect_video_frames():
+    """Kumpulkan frame video selama NOTIF_VIDEO_DURATION detik sejak objek terdeteksi,
+    tiap frame diberi kotak deteksi sesuai posisi orang saat itu."""
+    n        = NOTIF_VIDEO_FPS * NOTIF_VIDEO_DURATION
+    interval = 1.0 / max(1, NOTIF_VIDEO_FPS)
+    frames   = []
+    for _ in range(n):
+        t = time.monotonic()
+        f = state._grabber.read() if state._grabber else None
+        if f is not None:
+            frames.append(_draw_detections(f, _current_person_boxes()))
+        wait = interval - (time.monotonic() - t)
+        if wait > 0:
+            time.sleep(wait)
+    return frames
 
 
 def _worker():
