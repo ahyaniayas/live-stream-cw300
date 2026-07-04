@@ -33,19 +33,30 @@
     .empty-state p { font-size:14px; }
 
     /* File list */
-    .file-list { display:flex; flex-direction:column; gap:6px; }
-    .day-group { background:var(--panel); border-radius:12px; overflow:hidden; }
-    .day-label { padding:10px 16px; font-size:12px; font-weight:600;
-                 color:var(--muted); background:var(--panel2);
-                 border-bottom:1px solid rgba(255,255,255,.06); }
-    .file-item { display:flex; align-items:center; gap:12px; padding:12px 16px;
-                 border-bottom:1px solid rgba(255,255,255,.04);
+    .file-list { display:flex; flex-direction:column; gap:12px; }
+    .day-group { background:var(--panel); border-radius:14px; overflow:hidden; }
+    .day-header { display:flex; align-items:center; gap:10px; padding:12px 16px;
+                  font-size:12px; font-weight:600; color:var(--muted);
+                  background:var(--panel2); cursor:pointer; user-select:none;
+                  transition:background .15s; }
+    .day-header:hover { background:rgba(255,255,255,.08); }
+    .day-header .day-title { flex:1; }
+    .day-header .day-count { font-size:11px; font-weight:600; color:var(--muted);
+                              background:rgba(255,255,255,.08); border-radius:20px;
+                              padding:2px 9px; }
+    .day-chevron { width:14px; height:14px; flex-shrink:0; transition:transform .2s; }
+    .day-group.collapsed .day-chevron { transform:rotate(-90deg); }
+    .day-body { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+                gap:10px; padding:12px; }
+    .day-group.collapsed .day-body { display:none; }
+    .file-item { display:flex; flex-direction:column; gap:10px; padding:12px 14px;
+                 background:var(--panel2); border-radius:12px;
                  cursor:pointer; transition:background .15s; }
-    .file-item:last-child { border-bottom:none; }
-    .file-item:hover { background:rgba(255,255,255,.04); }
+    .file-item:hover { background:rgba(255,255,255,.07); }
     .file-item.active { background:rgba(255,105,0,.12); }
     .file-item.recording { cursor:default; }
-    .file-icon { width:36px; height:36px; background:var(--panel2); border-radius:8px;
+    .file-top { display:flex; align-items:center; gap:12px; }
+    .file-icon { width:36px; height:36px; background:var(--panel); border-radius:8px;
                  display:flex; align-items:center; justify-content:center;
                  flex-shrink:0; color:var(--accent); }
     .file-icon.rec-icon { color:var(--red); }
@@ -60,8 +71,8 @@
                  animation:blink 1.2s ease-in-out infinite; flex-shrink:0; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
     .file-actions { display:flex; gap:6px; flex-shrink:0; }
-    .btn-icon { background:var(--panel2); border:none; border-radius:8px;
-                padding:7px 12px; font-size:12px; font-weight:600; color:var(--txt);
+    .btn-icon { flex:1; justify-content:center; background:var(--panel); border:none; border-radius:8px;
+                padding:7px 10px; font-size:12px; font-weight:600; color:var(--txt);
                 cursor:pointer; display:flex; align-items:center; gap:5px;
                 transition:background .15s; white-space:nowrap; text-decoration:none; }
     .btn-icon:hover { background:rgba(255,255,255,.1); }
@@ -120,6 +131,8 @@
     let _files = [];
     let _activeFile = null;
     let _warnTimer = null;
+    let _collapsedDays = new Set();
+    let _collapsedInit = false;
 
     function fmtSize(bytes) {
       if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -144,10 +157,16 @@
       const order = [];
       for (const f of files) {
         const p = parseFilename(f.name);
-        if (!groups[p.dayKey]) { groups[p.dayKey] = { label: p.label, files: [] }; order.push(p.dayKey); }
+        if (!groups[p.dayKey]) { groups[p.dayKey] = { key: p.dayKey, label: p.label, files: [] }; order.push(p.dayKey); }
         groups[p.dayKey].files.push({ ...f, ...p });
       }
       return order.map(k => groups[k]);
+    }
+
+    function toggleDay(key) {
+      if (_collapsedDays.has(key)) _collapsedDays.delete(key);
+      else _collapsedDays.add(key);
+      render(_files);
     }
 
     function showWarn() {
@@ -215,32 +234,46 @@
       stats.textContent = `${files.length} file · ${fmtSize(total)}`;
 
       const groups = groupByDay(files);
+      if (!_collapsedInit) {
+        groups.forEach((g, i) => { if (i > 0) _collapsedDays.add(g.key); });
+        _collapsedInit = true;
+      }
       list.innerHTML = groups.map(g => `
-        <div class="day-group">
-          <div class="day-label">${g.label}</div>
+        <div class="day-group ${_collapsedDays.has(g.key) ? 'collapsed' : ''}">
+          <div class="day-header" onclick="toggleDay('${g.key}')">
+            <svg class="day-chevron" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+            <span class="day-title">${g.label}</span>
+            <span class="day-count">${g.files.length} file</span>
+          </div>
+          <div class="day-body">
           ${g.files.map(f => {
             const rec = !!f.recording;
             return `
             <div class="file-item ${_activeFile === f.name ? 'active' : ''} ${rec ? 'recording' : ''}"
                  data-name="${f.name}" onclick="playFile('${f.name}', ${rec})">
-              <div class="file-icon ${rec ? 'rec-icon' : ''}">
-                ${rec
-                  ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                       <circle cx="12" cy="12" r="8"/>
-                     </svg>`
-                  : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                       <circle cx="12" cy="12" r="10"/>
-                       <polygon points="10 8 16 12 10 16 10 8"/>
-                     </svg>`
-                }
-              </div>
-              <div class="file-meta">
-                <div class="file-time">
-                  ${f.time}
-                  ${rec ? `<span class="badge-rec"><span class="dot-blink"></span><span class="rec-label">Sedang direkam</span></span>` : ''}
+              <div class="file-top">
+                <div class="file-icon ${rec ? 'rec-icon' : ''}">
+                  ${rec
+                    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                         <circle cx="12" cy="12" r="8"/>
+                       </svg>`
+                    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                         <circle cx="12" cy="12" r="10"/>
+                         <polygon points="10 8 16 12 10 16 10 8"/>
+                       </svg>`
+                  }
                 </div>
-                <div class="file-size">${fmtSize(f.size)}</div>
+                <div class="file-meta">
+                  <div class="file-time">
+                    ${f.time}
+                    ${rec ? `<span class="badge-rec"><span class="dot-blink"></span><span class="rec-label">Sedang direkam</span></span>` : ''}
+                  </div>
+                  <div class="file-size">${fmtSize(f.size)}</div>
+                </div>
               </div>
               <div class="file-actions" onclick="event.stopPropagation()">
                 ${rec
@@ -277,6 +310,7 @@
               </div>
             </div>`;
           }).join('')}
+          </div>
         </div>
       `).join('');
     }
