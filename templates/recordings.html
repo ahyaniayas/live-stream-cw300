@@ -95,15 +95,7 @@
     /* Loading skeleton */
     .skel { background:var(--panel2); border-radius:8px; animation:shimmer 1.5s infinite; }
     @keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
-
-    /* Custom Plyr Theme to match our dark theme */
-    :root {
-      --plyr-color-main: var(--accent);
-      --plyr-video-background: #000;
-    }
-    .plyr { border-radius: 14px; height: 100%; }
   </style>
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
 </head>
 <body>
   <div class="rec-wrap">
@@ -135,20 +127,12 @@
   </div>
 
 
-  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
   <script>
     let _files = [];
     let _activeFile = null;
     let _warnTimer = null;
     let _collapsedDays = new Set();
     let _collapsedInit = false;
-    let _plyrInstance = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      _plyrInstance = new Plyr('#player', {
-        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'fullscreen']
-      });
-    });
 
     function fmtSize(bytes) {
       if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -196,27 +180,16 @@
       if (isRecording) { showWarn(); return; }
 
       _activeFile = name;
+      const player = document.getElementById('player');
       const wrap   = document.getElementById('playerWrap');
       const info   = document.getElementById('playerInfo');
       const p      = parseFilename(name);
 
-      const vidUrl = '/recordings/video/' + encodeURIComponent(name) + '#t=0.001';
-      
-      // Menggunakan API Plyr untuk mengganti sumber video
-      if (_plyrInstance) {
-        _plyrInstance.source = {
-          type: 'video',
-          sources: [{ src: vidUrl, type: 'video/mp4' }]
-        };
-        _plyrInstance.play().catch(() => {});
-      } else {
-        const player = document.getElementById('player');
-        player.src = vidUrl;
-        player.play().catch(() => {});
-      }
-
+      player.src = '/recordings/video/' + encodeURIComponent(name);
       wrap.classList.remove('hidden');
       info.textContent = p.label + ', ' + p.time;
+
+      player.play().catch(() => {});
 
       wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
