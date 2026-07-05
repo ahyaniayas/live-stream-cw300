@@ -6,7 +6,7 @@
 ENV_FILE="$(dirname "$0")/../.env"
 RECORD_DIR="$(grep -E '^RECORD_DIR=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)"
 RECORD_DIR="${RECORD_DIR:-/home/serverku/live-stream-cw300/recordings}"
-SEGMENT_SEC=900    # 15 Menit
+SEGMENT_SEC=60
 RTSP_2K="rtsp://localhost:8554/cctv_sub3"
 
 mkdir -p "$RECORD_DIR/2k"
