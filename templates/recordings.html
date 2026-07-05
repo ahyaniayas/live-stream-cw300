@@ -288,7 +288,7 @@
                        </svg>
                        <span class="compress-label">Sedang dikompres</span></span>` : ''}
                   </div>
-                  <div class="file-size">${compressing ? `${fmtSize(f.size)} → mengompres… ${fmtSize(f.compress_size)}` : fmtSize(f.size)}</div>
+                  <div class="file-size">${compressing ? `${fmtSize(f.size)} → ${fmtSize(f.compress_size)}` : fmtSize(f.size)}</div>
                 </div>
               </div>
               <div class="file-actions" onclick="event.stopPropagation()">
