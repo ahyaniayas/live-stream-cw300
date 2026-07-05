@@ -11,9 +11,10 @@ RTSP_2K="rtsp://localhost:8554/cctv_sub3"
 
 mkdir -p "$RECORD_DIR/2k"
 
-FFMPEG_ARGS="-rtsp_transport tcp -fflags +genpts -c:v copy -tag:v hvc1 -c:a aac -b:a 128k -f segment -segment_time $SEGMENT_SEC -segment_atclocktime 1 -segment_format mp4 -strftime 1 -reset_timestamps 1 -movflags +faststart"
+INPUT_ARGS="-rtsp_transport tcp -fflags +genpts"
+FFMPEG_ARGS="-c:v copy -tag:v hvc1 -c:a aac -b:a 128k -f segment -segment_time $SEGMENT_SEC -segment_atclocktime 1 -segment_format mp4 -strftime 1 -reset_timestamps 1 -movflags +faststart"
 
-ffmpeg -i "$RTSP_2K" $FFMPEG_ARGS "$RECORD_DIR/2k/%Y%m%d_%H%M%S.mp4" &
+ffmpeg $INPUT_ARGS -i "$RTSP_2K" $FFMPEG_ARGS "$RECORD_DIR/2k/%Y%m%d_%H%M%S.mp4" &
 PID_2K=$!
 
 # Saat service dihentikan (SIGTERM), hentikan ffmpeg
