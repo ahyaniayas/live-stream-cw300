@@ -20,20 +20,12 @@ def _list_files():
     files = sorted(_RECORD_PATH.glob("*.mp4"), key=lambda f: f.stat().st_mtime, reverse=True)
     result = []
     for f in files:
-        if f.name.startswith("."):
-            continue
         stat = f.stat()
-        try:
-            compress_size = (_RECORD_PATH / f".tmp_{f.name}").stat().st_size
-        except FileNotFoundError:
-            compress_size = None
         result.append({
             "name": f.name,
             "size": stat.st_size,
             "mtime": stat.st_mtime,
             "recording": (now - stat.st_mtime) < _RECORDING_THRESHOLD,
-            "compressing": compress_size is not None,
-            "compress_size": compress_size,
         })
     return result
 
