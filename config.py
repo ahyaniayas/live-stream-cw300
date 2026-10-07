@@ -1,4 +1,6 @@
 import os
+import secrets
+import time
 
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 _ENV_PATH = os.path.join(BASE_DIR, ".env")
@@ -43,6 +45,8 @@ def _str(key, default=""):
 # ── Dibaca saat import ────────────────────────────────────────
 APP_DEBUG      = _bool ("APP_DEBUG",          True)
 APP_PORT       = _int  ("APP_PORT",           3001)
+SECRET_KEY     = _str  ("SECRET_KEY") or secrets.token_hex(32)  # random per proses; set di .env agar sesi tahan restart
+PIN_VALID_HOURS = _int ("PIN_VALID_HOURS",    6)
 
 STREAM_URL     = _str  ("STREAM_URL",         "rtsp://localhost:8554/cctv")
 DETECT_CONF    = _float("DETECT_CONF",        0.35)
@@ -88,6 +92,21 @@ ZONE_PALETTE = [
 DB_PATH = os.path.join(BASE_DIR, "cctv_detect.db")
 
 RECORD_DIR = _str("RECORD_DIR", os.path.join(BASE_DIR, "recordings"))
+
+
+# ── PIN akses web ─────────────────────────────────────────────
+def pin_at(ts=None):
+    """PIN saat `ts` (default: sekarang) — 2 digit tanggal, jam, menit (24 jam)."""
+    t = time.localtime(ts if ts is not None else time.time())
+    return f"{t.tm_mday:02d}{t.tm_hour:02d}{t.tm_min:02d}"
+
+
+def pin_valid(pin, now=None):
+    """True jika `pin` = PIN salah satu menit dalam PIN_VALID_HOURS terakhir."""
+    if not pin:
+        return False
+    now = now if now is not None else time.time()
+    return any(pin_at(now - m * 60) == pin for m in range(PIN_VALID_HOURS * 60 + 1))
 
 
 # ── Helpers ───────────────────────────────────────────────────

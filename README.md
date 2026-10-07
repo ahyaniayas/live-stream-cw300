@@ -48,6 +48,8 @@ Salin dan sesuaikan file `.env`:
 # Aplikasi
 APP_DEBUG=true
 APP_PORT=3001
+SECRET_KEY=            # string acak; kosong = acak tiap restart (sesi login reset)
+PIN_VALID_HOURS=6      # masa berlaku PIN & sesi login (jam)
 
 # Stream RTSP dari go2rtc
 STREAM_URL=rtsp://localhost:8554/cctv
@@ -154,7 +156,24 @@ sudo journalctl -u cctv -f        # log realtime
 sudo journalctl -u cctv -n 100    # 100 baris terakhir
 ```
 
-Buka browser: **http://\<IP-SERVER\>:3001**
+Buka browser: **http://\<IP-SERVER\>:3001** — masukkan PIN saat diminta (lihat bagian [Akses Web (PIN)](#akses-web-pin)).
+
+---
+
+## Akses Web (PIN)
+
+Semua halaman web dilindungi PIN 6 digit:
+
+**PIN = 2 digit tanggal + 2 digit jam (format 24 jam) + 2 digit menit**
+
+Contoh: 7 Oktober pukul 14:35 → `071435` (tanggal 09, jam 03, menit 04 → `090304`).
+
+- PIN berlaku **6 jam** sejak menit tersebut, jadi PIN yang dibaca beberapa jam lalu masih bisa dipakai.
+- Setelah login, sesi berlaku 6 jam tanpa perlu memasukkan PIN lagi.
+- Salah PIN 8× berturut-turut → IP diblokir 1 menit.
+- Masa berlaku diatur via `PIN_VALID_HOURS` di `.env`.
+
+Isi `SECRET_KEY` di `.env` (string acak) agar sesi login tidak reset setiap restart server.
 
 ---
 
@@ -203,6 +222,7 @@ live-stream-cw300/
 ├── zones.py            # Logika zona: bbox check, update, draw
 ├── telegram.py         # Kirim notifikasi + worker thread
 ├── routes/
+│   ├── auth.py         # PIN gate + halaman login
 │   ├── stream.py       # /video_feed, /status, /detect/*, /overlay/*
 │   ├── zone_api.py     # /zones CRUD
 │   └── notif.py        # /notif/settings, /notif/test

@@ -8,10 +8,10 @@ Buka: http://localhost:3001
 """
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;+discardcorrupt"
 
-from config import reload_dotenv, log, APP_DEBUG, NOTIF_HISTORY_DISPLAY
+from config import reload_dotenv, log, APP_DEBUG, NOTIF_HISTORY_DISPLAY, SECRET_KEY, PIN_VALID_HOURS
 reload_dotenv()
 
 import database
@@ -21,6 +21,8 @@ import telegram
 from flask import Flask
 
 app = Flask(__name__)
+app.secret_key = SECRET_KEY
+app.permanent_session_lifetime = timedelta(hours=PIN_VALID_HOURS)
 
 # ── Init saat startup ────────────────────────────────────────
 database.init_db()
@@ -58,7 +60,8 @@ import detection
 detection.ensure_started()
 
 # ── Daftarkan blueprint ──────────────────────────────────────
-from routes import stream_bp, zones_bp, notif_bp, recorder_bp
+from routes import stream_bp, zones_bp, notif_bp, recorder_bp, auth_bp
+app.register_blueprint(auth_bp)
 app.register_blueprint(stream_bp)
 app.register_blueprint(zones_bp)
 app.register_blueprint(notif_bp)
