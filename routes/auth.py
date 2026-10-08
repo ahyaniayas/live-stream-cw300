@@ -55,7 +55,7 @@ _LOGIN_HTML = """<!doctype html>
   <form method="post" action="/login">
     <h1>Kamera Xiaomi CW300</h1>
     <p class="hint">Masukkan PIN 6 digit</p>
-    <input name="pin" type="text" inputmode="numeric" pattern="[0-9]{6}"
+    <input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}"
            maxlength="6" autocomplete="off" autofocus required
            placeholder="XXXXXX"
            oninput="this.value=this.value.replace(/[^0-9]/g,'');
